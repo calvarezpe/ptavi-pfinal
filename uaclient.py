@@ -4,7 +4,6 @@
 Programa cliente que abre un socket a un servidor
 """
 
-
 import socket
 import sys
 import os
