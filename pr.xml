@@ -1,0 +1,7 @@
+<?xml version= "1.0" encoding= "UTF-8" ?>
+
+    <config>
+        <server name="Proxxxy" ip="" puerto="5001"/>
+        <database path="database.txt" passwdpath=""/>
+        <log path="log_proxy.txt"/>
+    </config>
