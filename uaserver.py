@@ -4,6 +4,8 @@
 Clase (y programa principal) para un servidor de eco en UDP simple
 """
 
+#git commit -m "update" pr.xml proxy_registrar.py ua1.xml ua2.xml uaclient.py uaserver.py
+
 import SocketServer
 import sys
 import os
