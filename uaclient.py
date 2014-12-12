@@ -12,6 +12,9 @@ from xml.sax.handler import ContentHandler
 
 
 class XMLHandler(ContentHandler):
+    """
+    Handler para leer XML de configuración de User Agents
+    """
 
     def __init__(self):
         #Diccionario de Listas con todo lo que puedo tener (sólamente para

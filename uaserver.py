@@ -7,6 +7,48 @@ Clase (y programa principal) para un servidor de eco en UDP simple
 import SocketServer
 import sys
 import os
+from xml.sax import make_parser
+from xml.sax.handler import ContentHandler
+
+
+class XMLHandler(ContentHandler):
+    """
+    Handler para leer XML de configuración de User Agents
+    """
+
+    def __init__(self):
+        #Diccionario de Listas con todo lo que puedo tener (sólamente para
+        #buscar los nombres, no para guardar valores)
+        self.UADicc = {
+            'account': ['username', 'passwd'],
+            'uaserver': ['ip', 'puerto'],
+            'rtpaudio': ['puerto'],
+            'regproxy': ['ip', 'puerto'],
+            'log': ['path'],
+            'audio': ['path']
+        }
+        self.Atributos = {}
+        #Diccionario donde guardamos los valores de los atributos
+
+    def startElement(self, name, attrs):
+        if name in self.UADicc:
+            for Atributo in self.UADicc[name]:  # busco en la etiqueta=name
+                Clave = name + '_' + Atributo
+                #nombre de las entradas del diccionario
+                if Clave == 'uaserver_ip':
+                    self.Atributos[Clave] = attrs.get(Atributo, "127.0.0.1")
+                    print 'AAAA', self.Atributos[Clave]
+                    #NO FUNCIONA!!!!!! NO PONE 127....
+                else:
+                    self.Atributos[Clave] = attrs.get(Atributo, "")
+                #Esta funcion guarda el valor de Atributo, si existe en esa
+                #etiqueta, y si no, guarda un string vacío ("").
+                #Así que hacemos un if para que cuando el
+                #atributo sea el ip del server y esté vacío, ponga 127.0.0.1
+           
+
+    def get_tags(self):
+        return self.Atributos
 
 
 class EchoHandler(SocketServer.DatagramRequestHandler):
@@ -46,7 +88,8 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     # iniciar RTP
                     # aEjecutar es un string con lo que se ha de ejecutar
                     # en la shell
-                    aEjecutar = './mp32rtp -i ' + IP_CLIENT + ' -p 23032 < ' + SONG
+                    aEjecutar = './mp32rtp -i ' + IP_CLIENT + ' -p 23032 < ' 
+                    + SONG
                     print "Vamos a ejecutar", aEjecutar
                     os.system(aEjecutar)
                     print "Enviando: Transmisión de datos terminada"
@@ -61,18 +104,30 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
 
 if __name__ == "__main__":
     try:
-        IP = sys.argv[1]
-        PORT = sys.argv[2]
-        SONG = sys.argv[3]
+        FichConfig = sys.argv[1]    #FICHERO XML
         # Comprobar que existe el archivo mp3
-        if not os.access(SONG, os.F_OK):  # Devuelve True si está en la carpeta
-            sys.exit('Usage: python server.py IP port audio_file')
+        if not os.access(FichConfig, os.F_OK):
+            sys.exit('Usage: python uaserver.py config')
     except IndexError:
-        sys.exit('Usage: python server.py IP port audio_file')
+        sys.exit('Usage: python uaserver.py config')
     except ValueError:
-        sys.exit('Usage: python server.py IP port audio_file')
+        sys.exit('Usage: python uaserver.py config')
 
     MethodList = ["INVITE", "ACK", "BYE"]
+    parser = make_parser()
+    Handler = XMLHandler()
+    parser.setContentHandler(Handler)
+    parser.parse(open(FichConfig))
+    Dicc = Handler.get_tags() # Diccionario con los atributos del fichero xml
+    print Dicc
+    IP = Dicc['uaserver_ip']
+    print IP
+    PORT = Dicc['uaserver_puerto']
+    print PORT
+    SONG = Dicc['audio_path']
+    print SONG
+
+
     # Creamos servidor de eco y escuchamos
     serv = SocketServer.UDPServer(("", int(PORT)), EchoHandler)
     print "Listening..."
