@@ -1,13 +1,53 @@
 #!/usr/bin/python
 # -*- coding: iso-8859-15 -*-
 """
-Clase (y programa principal) para un servidor de eco
-en UDP simple
+Clase (y programa principal) para un servidor proxy/registrar
 """
 
 import SocketServer
 import sys
 import time
+import os
+from xml.sax import make_parser
+from xml.sax.handler import ContentHandler
+
+
+class XMLHandler(ContentHandler):
+    """
+    Handler para leer XML de configuración de Proxy
+    """
+
+    def __init__(self):
+        #Diccionario de Listas con todo lo que puedo tener (sólamente para
+        #buscar los nombres, no para guardar valores)
+        self.UADicc = {
+            'server': ['name', 'ip', 'puerto'],
+            'database': ['path', 'passwdpath'],
+            'log': ['path']
+        }
+        self.Atributos = {}
+        #Diccionario donde guardamos los valores de los atributos
+
+    def startElement(self, name, attrs):
+        if name in self.UADicc:
+            for Atributo in self.UADicc[name]:  # busco en la etiqueta=name
+                Clave = name + '_' + Atributo
+                #nombre de las entradas del diccionario
+                if Clave == 'server_ip':
+                    self.Atributos[Clave] = attrs.get(Atributo, "127.0.0.1")
+                    print 'AAAA', self.Atributos[Clave]
+                    #NO FUNCIONA!!!!!! NO PONE 127....
+                else:
+                    self.Atributos[Clave] = attrs.get(Atributo, "")
+                #Esta funcion guarda el valor de Atributo, si existe en esa
+                #etiqueta, y si no, guarda un string vacío ("").
+                #Así que hacemos un if para que cuando el
+                #atributo sea el ip del server y esté vacío, ponga 127.0.0.1
+           
+
+    def get_tags(self):
+        return self.Atributos
+
 
 
 class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
@@ -72,8 +112,32 @@ Programa Principal
 
 if __name__ == "__main__":
     DiccUsers = {}  # Creo el diccionario de usuarios e IPs
-    listarg = sys.argv
+
+    try:
+        FichConfig = sys.argv[1]    #FICHERO XML
+        # Comprobar que existe el archivo mp3
+        if not os.access(FichConfig, os.F_OK):
+            sys.exit('Usage: python proxy_registrar.py config')
+    except IndexError:
+        sys.exit('Usage: python proxy_registrar.py config')
+    except ValueError:
+        sys.exit('Usage: python proxy_registrar.py config')
+
+    parser = make_parser()
+    Handler = XMLHandler()
+    parser.setContentHandler(Handler)
+    parser.parse(open(FichConfig))
+    Dicc = Handler.get_tags() # Diccionario con los atributos del fichero xml
+    print Dicc
+    NAME = Dicc['server_name']
+    print NAME
+    IP = Dicc['server_ip']
+    print IP
+    PORT = Dicc['server_puerto']
+    print PORT
+
+
     # Creamos servidor de eco y escuchamos
-    serv = SocketServer.UDPServer(("", int(listarg[1])), SIPRegisterHandler)
-    print "Lanzando servidor UDP de eco..."
+    serv = SocketServer.UDPServer(("", int(IP)), SIPRegisterHandler)
+    print "Server", NAME, "listening at port", PORT, "..."
     serv.serve_forever()

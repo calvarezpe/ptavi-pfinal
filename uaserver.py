@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: iso-8859-15 -*-
 """
-Clase (y programa principal) para un servidor de eco en UDP simple
+Clase (y programa principal) para la parte servidora de un UA en UDP
 """
 
 import SocketServer
@@ -114,6 +114,7 @@ if __name__ == "__main__":
         sys.exit('Usage: python uaserver.py config')
 
     MethodList = ["INVITE", "ACK", "BYE"]
+
     parser = make_parser()
     Handler = XMLHandler()
     parser.setContentHandler(Handler)
