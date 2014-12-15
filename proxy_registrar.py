@@ -34,9 +34,9 @@ class XMLHandler(ContentHandler):
                 Clave = name + '_' + Atributo
                 #nombre de las entradas del diccionario
                 if Clave == 'server_ip':
-                    self.Atributos[Clave] = attrs.get(Atributo, "127.0.0.1")
-                    print 'AAAA', self.Atributos[Clave]
-                    #NO FUNCIONA!!!!!! NO PONE 127....
+                    self.Atributos[Clave] = attrs.get(Atributo, "")
+                    if self.Atributos[Clave] == "":
+                        self.Atributos[Clave] = '127.0.0.1'
                 else:
                     self.Atributos[Clave] = attrs.get(Atributo, "")
                 #Esta funcion guarda el valor de Atributo, si existe en esa
@@ -72,15 +72,21 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                 WordList = line.split(' ')
                 if WordList[0] == "REGISTER":
                     User = WordList[1].split(':')[1]
-                    IP = self.client_address[0]
-                    Expires = int(WordList[3])  # Tiempo en el que expirará
+                    Ip = self.client_address[0]
+                    Port = self.client_address[1]
+                    WordList2 = line.split('\r\n')
+                    Expires = int(WordList[1].split(' ')[1])
+                    print Expires #OJOOO QUITAR LUEGO !!!!!!!!!!!
+                    #Tiempo en el que expirará
                     Time = time.time()  # hora actual (en segundos)
-                    TimeExp = Time + Expires  # Hora a la que expirará
-                    Data = [IP, TimeExp]
+                    TimeReg = Time  # hora a la que se ha registrado (ahora)
+                    Data = [Ip, Port, TimeReg, Expires]
                     DiccUsers[User] = Data
                     #Añadimos la lista con los datos al diccionario de usuarios
                     for User in DiccUsers.keys():
-                        TimeExp = DiccUsers[User][1]
+                        TimeReg = DiccUsers[User][2]
+                        Expires = DiccUsers[User][3]
+                        TimeExp = TimeReg + Expires  # Hora a la que expirará
                         if Time >= TimeExp:
                             del DiccUsers[User]
                             #Lo eliminamos del diccionario
@@ -95,12 +101,15 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
         Editor de archivos txt de registro de usuarios
         """
 
-        txt = open('registered.txt', 'w')
-        txt.write('User\tIP\tExpires\n')
+        txt = open(DATABASE, 'w')
+        txt.write('User\tIP\tRegister Time\tExpires\n')
         for User in DiccUsers.keys():
-            IP = DiccUsers[User][0]
-            TimeExp = DiccUsers[User][1]
-            TimeExp = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(TimeExp))
+            Ip = DiccUsers[User][0]
+            Port = DiccUsers[User][1]
+            TimeReg = DiccUsers[User][2]
+            Expires = DiccUsers[User][3]
+            TimeReg = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(TimeReg))
+            Expires = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(Expires))
             #Lo pasamos a formato guay
             txt.write(User + '\t' + IP + '\t' + TimeExp + '\n')
         txt.close()
@@ -135,9 +144,13 @@ if __name__ == "__main__":
     print IP
     PORT = Dicc['server_puerto']
     print PORT
+    DATABASE = Dicc['database_path']
+    print DATABASE
+    LOG = Dicc['log_path']
+    print LOG
 
 
     # Creamos servidor de eco y escuchamos
-    serv = SocketServer.UDPServer(("", int(IP)), SIPRegisterHandler)
+    serv = SocketServer.UDPServer(("", int(PORT)), SIPRegisterHandler)
     print "Server", NAME, "listening at port", PORT, "..."
     serv.serve_forever()

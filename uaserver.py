@@ -36,9 +36,9 @@ class XMLHandler(ContentHandler):
                 Clave = name + '_' + Atributo
                 #nombre de las entradas del diccionario
                 if Clave == 'uaserver_ip':
-                    self.Atributos[Clave] = attrs.get(Atributo, "127.0.0.1")
-                    print 'AAAA', self.Atributos[Clave]
-                    #NO FUNCIONA!!!!!! NO PONE 127....
+                    self.Atributos[Clave] = attrs.get(Atributo, "")
+                    if self.Atributos[Clave] == "":
+                        self.Atributos[Clave] = '127.0.0.1'
                 else:
                     self.Atributos[Clave] = attrs.get(Atributo, "")
                 #Esta funcion guarda el valor de Atributo, si existe en esa

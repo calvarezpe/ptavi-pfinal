@@ -36,9 +36,9 @@ class XMLHandler(ContentHandler):
                 Clave = name + '_' + Atributo
                 #nombre de las entradas del diccionario
                 if Clave == 'uaserver_ip':
-                    self.Atributos[Clave] = attrs.get(Atributo, "127.0.0.1")
-                    print 'AAAA', self.Atributos[Clave]
-                    #NO FUNCIONA!!!!!! NO PONE 127....
+                    self.Atributos[Clave] = attrs.get(Atributo, "")
+                    if self.Atributos[Clave] == "":
+                        self.Atributos[Clave] = '127.0.0.1'
                 else:
                     self.Atributos[Clave] = attrs.get(Atributo, "")
                 #Esta funcion guarda el valor de Atributo, si existe en esa
@@ -61,7 +61,7 @@ if __name__ == "__main__":
         if not os.access(FichConfig, os.F_OK):  # Devuelve True si está el fich
             sys.exit('Usage: python uaclient.py config method option')
         Method = sys.argv[2].upper()
-        option = sys.argv[3]
+        Option = sys.argv[3]
     except IndexError:
         sys.exit('Usage: python uaclient.py config method option')
     except ValueError:
@@ -72,35 +72,37 @@ if __name__ == "__main__":
     parser.setContentHandler(Handler)
     parser.parse(open(FichConfig))
     Dicc = Handler.get_tags() # Diccionario con los atributos del fichero xml
-    print Dicc
     NAME = Dicc['account_username']
-    print NAME
-    SERVER = Dicc['uaserver_ip']
-    print SERVER
-    PORT = Dicc['uaserver_puerto']
-    print PORT
+    UA_IP = Dicc['uaserver_ip']
+    UA_PORT = Dicc['uaserver_puerto']
+    UASERVER = UA_IP + ':' + UA_PORT
+    PR_IP = Dicc['regproxy_ip']
+    PR_PORT = Dicc['regproxy_puerto']
 
     # Contenido que vamos a enviar
-    Line = Method + ' sip:' + NAME + '@' + SERVER + ' SIP/2.0\r\n'
+    Line = Method + ' sip:' + NAME + '@' + UASERVER + ' SIP/2.0\r\n'
+
+    if Method == 'REGISTER':
+        Option = 'Expires: ' + Option + '\r\n'
 
     # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
     my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    my_socket.connect((SERVER, int(PORT)))
+    my_socket.connect((PR_IP, int(PR_PORT)))
 
     try:
-        print "Enviando: " + Line
-        my_socket.send(Line + '\r\n')
+        print "Enviando: " + Line + Option
+        my_socket.send(Line + Option + '\r\n')
         data = my_socket.recv(1024)
     except:
-        sys.exit('Error: No server listening at ' + SERVER + ' port ' + PORT)
+        sys.exit('Error: No server listening at ' + PR_IP + ' port ' + PR_PORT)
         #PONERLO EN EL LOG
     print 'Recibido -- \r\n', data
     ListaTexto = data.split('\r\n')
     if Method == "INVITE":
         if ListaTexto[2] == 'SIP/2.0 200 OK':
             Method = "ACK"
-            Line = Method + ' sip:' + NAME + '@' + SERVER + ' SIP/2.0\r\n'
+            Line = Method + ' sip:' + NAME + '@' + UA_IP + ' SIP/2.0\r\n'
             print "Enviando: " + Line
             my_socket.send(Line + '\r\n')
     # Si estamos en BYE directamente nos salimos tras imprimir data
