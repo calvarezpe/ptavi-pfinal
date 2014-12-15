@@ -2,6 +2,6 @@
 
     <config>
         <server name="Proxxxy" ip="" puerto="5001"/>
-        <database path="database.txt" passwdpath=""/>
-        <log path="log_proxy.txt"/>
+        <database path="./database.txt" passwdpath=""/>
+        <log path="./log_proxy.txt"/>
     </config>

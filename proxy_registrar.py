@@ -75,8 +75,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                     Ip = self.client_address[0]
                     Port = self.client_address[1]
                     WordList2 = line.split('\r\n')
-                    Expires = int(WordList[1].split(' ')[1])
-                    print Expires #OJOOO QUITAR LUEGO !!!!!!!!!!!
+                    Expires = int(WordList2[1].split(' ')[1])
                     #Tiempo en el que expirará
                     Time = time.time()  # hora actual (en segundos)
                     TimeReg = Time  # hora a la que se ha registrado (ahora)
@@ -102,16 +101,17 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
         """
 
         txt = open(DATABASE, 'w')
-        txt.write('User\tIP\tRegister Time\tExpires\n')
+        txt.write('( User\t\t--\t\tIP\t--\tPort -- Register Time\t' +
+        ' -- Expires )\n')
         for User in DiccUsers.keys():
             Ip = DiccUsers[User][0]
             Port = DiccUsers[User][1]
             TimeReg = DiccUsers[User][2]
             Expires = DiccUsers[User][3]
             TimeReg = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(TimeReg))
-            Expires = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(Expires))
             #Lo pasamos a formato guay
-            txt.write(User + '\t' + IP + '\t' + TimeExp + '\n')
+            txt.write(User + '\t' + Ip + '\t' + str(Port) + '\t' + 
+            TimeReg + '\t' + str(Expires) + '\n')
         txt.close()
 
 
@@ -137,18 +137,11 @@ if __name__ == "__main__":
     parser.setContentHandler(Handler)
     parser.parse(open(FichConfig))
     Dicc = Handler.get_tags() # Diccionario con los atributos del fichero xml
-    print Dicc
     NAME = Dicc['server_name']
-    print NAME
     IP = Dicc['server_ip']
-    print IP
     PORT = Dicc['server_puerto']
-    print PORT
     DATABASE = Dicc['database_path']
-    print DATABASE
     LOG = Dicc['log_path']
-    print LOG
-
 
     # Creamos servidor de eco y escuchamos
     serv = SocketServer.UDPServer(("", int(PORT)), SIPRegisterHandler)

@@ -85,14 +85,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     print "Enviando: SIP/2.0 200 OK"
                     self.wfile.write('SIP/2.0 200 OK\r\n\r\n')
                 elif Method == "ACK":
-                    # iniciar RTP
-                    # aEjecutar es un string con lo que se ha de ejecutar
-                    # en la shell
-                    aEjecutar = './mp32rtp -i ' + IP_CLIENT + ' -p 23032 < ' 
-                    + SONG
-                    print "Vamos a ejecutar", aEjecutar
-                    os.system(aEjecutar)
-                    print "Enviando: Transmisión de datos terminada"
+                    Reproducir()
                 elif Method == "BYE":
                     print "Enviando: SIP/2.0 200 OK"
                     self.wfile.write('SIP/2.0 200 OK\r\n\r\n')
@@ -100,6 +93,18 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     print "Enviando: SIP/2.0 400 Bad Request"
                     self.wfile.write('SIP/2.0 400 Bad Request\r\n\r\n')
                     # Error general
+
+    def Reproducir(self): #PARA IMPORTARLO LUEGO AL CLIENT
+        """
+        Reproduce un fichero mp3
+        """
+        # iniciar RTP
+        # aEjecutar es un string con lo que se ha de ejecutar en la shell
+        aEjecutar = './mp32rtp -i ' + IP_CLIENT + ' -p 23032 < ' + SONG
+#OJO TAMBIEN PUEDE SER 23033
+        print "Vamos a ejecutar", aEjecutar
+        os.system(aEjecutar)
+        print "Enviando: Transmisión de datos terminada"
 
 
 if __name__ == "__main__":
@@ -120,13 +125,9 @@ if __name__ == "__main__":
     parser.setContentHandler(Handler)
     parser.parse(open(FichConfig))
     Dicc = Handler.get_tags() # Diccionario con los atributos del fichero xml
-    print Dicc
     IP = Dicc['uaserver_ip']
-    print IP
     PORT = Dicc['uaserver_puerto']
-    print PORT
     SONG = Dicc['audio_path']
-    print SONG
 
 
     # Creamos servidor de eco y escuchamos
