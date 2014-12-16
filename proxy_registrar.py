@@ -12,6 +12,9 @@ from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 
 
+def Time():
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time()))
+
 class XMLHandler(ContentHandler):
     """
     Handler para leer XML de configuración de Proxy

@@ -6,10 +6,14 @@ Programa de la parte cliente de un UA que abre un socket a un servidor
 
 import socket
 import sys
+import time
 import os
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 
+
+def Time():
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time()))
 
 class XMLHandler(ContentHandler):
     """
@@ -60,8 +64,8 @@ if __name__ == "__main__":
         FichConfig = sys.argv[1]    #FICHERO XML
         if not os.access(FichConfig, os.F_OK):  # Devuelve True si está el fich
             sys.exit('Usage: python uaclient.py config method option')
-        Method = sys.argv[2].upper()
-        Option = sys.argv[3]
+        METHOD = sys.argv[2].upper()
+        OPTION = sys.argv[3]
     except IndexError:
         sys.exit('Usage: python uaclient.py config method option')
     except ValueError:
@@ -78,12 +82,17 @@ if __name__ == "__main__":
     UASERVER = UA_IP + ':' + UA_PORT
     PR_IP = Dicc['regproxy_ip']
     PR_PORT = Dicc['regproxy_puerto']
+    PROXY = PR_IP + ':' + PR_PORT
+    LOG = Dicc['log_path']
+    SONG = Dicc['audio_path']
+
+    txt = open(LOG, 'w')
 
     # Contenido que vamos a enviar
-    Line = Method + ' sip:' + NAME + '@' + UASERVER + ' SIP/2.0\r\n'
+    Line = METHOD + ' sip:' + NAME + '@' + UASERVER + ' SIP/2.0\r\n'
 
-    if Method == 'REGISTER':
-        Option = 'Expires: ' + Option + '\r\n'
+    if METHOD == 'REGISTER':
+        Option = 'Expires: ' + OPTION + '\r\n'
 
     # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
     my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -91,15 +100,27 @@ if __name__ == "__main__":
     my_socket.connect((PR_IP, int(PR_PORT)))
 
     try:
-        print "Enviando: " + Line + Option
+        print "Enviando: \r\n" + Line + Option
+
+        LogLine = Line + Option
+        LineList = LogLine.split('\r\n')
+        LogLine = LineList[0] + ' ' + LineList[1]
+        txt.write(Time() + ' Sent to ' + PROXY + ': ' + LogLine + '\r\n')
+
         my_socket.send(Line + Option + '\r\n')
         data = my_socket.recv(1024)
+
     except:
-        sys.exit('Error: No server listening at ' + PR_IP + ' port ' + PR_PORT)
-        #PONERLO EN EL LOG
-    print 'Recibido -- \r\n', data
+        LogLine = 'Error: No server listening at ' + PR_IP + ' port ' + PR_PORT
+        txt.write(Time() + ' ' + LogLine + '\r\n')
+        sys.exit(LogLine)
+    
+    print 'Recibido: \r\n', data
     ListaTexto = data.split('\r\n')
-    if Method == "INVITE":
+    txt.write('Received from ' + PROXY + " ".join(ListaTexto))
+    #Ojo al uso de join. Pongo espacios.
+    #Así eliminamos los saltos de línea
+    if METHOD == "INVITE":
         if ListaTexto[2] == 'SIP/2.0 200 OK':
             Method = "ACK"
             Line = Method + ' sip:' + NAME + '@' + UA_IP + ' SIP/2.0\r\n'
@@ -111,4 +132,5 @@ if __name__ == "__main__":
 
     # Cerramos todo
     my_socket.close()
+    txt.close()
     print "Fin."

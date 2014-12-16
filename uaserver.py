@@ -6,10 +6,14 @@ Clase (y programa principal) para la parte servidora de un UA en UDP
 
 import SocketServer
 import sys
+import time
 import os
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 
+
+def Time():
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time()))
 
 class XMLHandler(ContentHandler):
     """
