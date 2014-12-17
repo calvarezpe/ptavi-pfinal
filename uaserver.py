@@ -131,10 +131,18 @@ if __name__ == "__main__":
     Dicc = Handler.get_tags() # Diccionario con los atributos del fichero xml
     IP = Dicc['uaserver_ip']
     PORT = Dicc['uaserver_puerto']
+    LOG = Dicc['log_path']
     SONG = Dicc['audio_path']
 
+    log = open(LOG, 'w')
+    log.write(Time() + "Starting...")
 
-    # Creamos servidor de eco y escuchamos
-    serv = SocketServer.UDPServer(("", int(PORT)), EchoHandler)
-    print "Listening..."
-    serv.serve_forever()
+    try:
+        # Creamos servidor de eco y escuchamos
+        serv = SocketServer.UDPServer(("", int(PORT)), EchoHandler)
+        print "Listening..."
+        serv.serve_forever()
+    except KeyboardInterrupt:
+        print "\r\nFinishing."
+        log.write(Time() + "Finishing.")
+        log.close()

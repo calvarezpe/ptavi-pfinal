@@ -12,9 +12,6 @@ from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 
 
-def Time():
-    return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time()))
-
 class XMLHandler(ContentHandler):
     """
     Handler para leer XML de configuración de Proxy
@@ -72,11 +69,18 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                 break
             else:
                 print line
+                #log = open(LOG, 'a')  # Abrimos en modo append
                 WordList = line.split(' ')
                 if WordList[0] == "REGISTER":
                     User = WordList[1].split(':')[1]
                     Ip = self.client_address[0]
                     Port = self.client_address[1]
+
+                    LineList = line.split('\r\n')
+                    LogLine = " ".join(LineList)
+                    log.write(self.Time() + ' Received from ' + Ip + ':' + 
+                    str(Port) + ': ' + LogLine + '\r\n')
+
                     WordList2 = line.split('\r\n')
                     Expires = int(WordList2[1].split(' ')[1])
                     #Tiempo en el que expirará
@@ -93,8 +97,16 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                             del DiccUsers[User]
                             #Lo eliminamos del diccionario
                     self.register2file()
-                    print "Enviando: SIP/2.0 200 OK"
-                    self.wfile.write("SIP/2.0 200 OK\r\n\r\n")
+
+                    OK = "SIP/2.0 200 OK"
+                    print "Enviando:\r\n" + OK
+
+                    LogLine = self.Time() + ' Sent to ' + Ip + ':' + str(Port)
+                    LogLine += ': ' + OK + '\r\n'
+                    log.write(LogLine)
+                    #log.close()
+
+                    self.wfile.write(OK + "\r\n\r\n")
                 else:
                     print "Método desconocido"
 
@@ -116,6 +128,9 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
             txt.write(User + '\t' + Ip + '\t' + str(Port) + '\t' + 
             TimeReg + '\t' + str(Expires) + '\n')
         txt.close()
+
+    def Time(self):
+        return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time()))
 
 
 """
@@ -146,7 +161,16 @@ if __name__ == "__main__":
     DATABASE = Dicc['database_path']
     LOG = Dicc['log_path']
 
-    # Creamos servidor de eco y escuchamos
-    serv = SocketServer.UDPServer(("", int(PORT)), SIPRegisterHandler)
-    print "Server", NAME, "listening at port", PORT, "..."
-    serv.serve_forever()
+    log = open(LOG, 'w')
+    log.write(SIPRegisterHandler.Time() + "Starting...")
+
+    try:
+        # Creamos servidor de eco y escuchamos
+        serv = SocketServer.UDPServer(("", int(PORT)), SIPRegisterHandler)
+        print "Server", NAME, "listening at port", PORT, "..."
+        serv.serve_forever()
+    except KeyboardInterrupt:
+        print "\r\nFinishing."
+        log.write(SIPRegisterHandler.Time() + "Finishing.")
+        log.close()
+        

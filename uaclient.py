@@ -61,11 +61,11 @@ Programa Principal
 
 if __name__ == "__main__":
     try:
-        FichConfig = sys.argv[1]    #FICHERO XML
+        FichConfig = sys.argv[1]    #Fichero XML
         if not os.access(FichConfig, os.F_OK):  # Devuelve True si está el fich
             sys.exit('Usage: python uaclient.py config method option')
         METHOD = sys.argv[2].upper()
-        OPTION = sys.argv[3]
+        OPTION = sys.argv[3] # POR QUE NO ME DETECTA ERROR SI PONGO LETRAS?
     except IndexError:
         sys.exit('Usage: python uaclient.py config method option')
     except ValueError:
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     LOG = Dicc['log_path']
     SONG = Dicc['audio_path']
 
-    txt = open(LOG, 'w')
+    log = open(LOG, 'w') #DEBE COMPARTIRLO CON EL SERVER? DEBEMOS ABRIRLO AQUÍ EN MODO APPEND???
 
     # Contenido que vamos a enviar
     Line = METHOD + ' sip:' + NAME + '@' + UASERVER + ' SIP/2.0\r\n'
@@ -103,22 +103,22 @@ if __name__ == "__main__":
         print "Enviando: \r\n" + Line + Option
 
         LogLine = Line + Option
-        LineList = LogLine.split('\r\n')
-        LogLine = LineList[0] + ' ' + LineList[1]
-        txt.write(Time() + ' Sent to ' + PROXY + ': ' + LogLine + '\r\n')
+        LineList = LogLine.split('\r\n')  # Eliminamos los saltos de línea
+        LogLine = " ".join(LineList)  # Ojo al uso de join. Pongo espacios.
+        log.write(Time() + ' Sent to ' + PROXY + ': ' + LogLine + '\r\n')
 
         my_socket.send(Line + Option + '\r\n')
         data = my_socket.recv(1024)
 
     except:
         LogLine = 'Error: No server listening at ' + PR_IP + ' port ' + PR_PORT
-        txt.write(Time() + ' ' + LogLine + '\r\n')
+        log.write(Time() + ' ' + LogLine + '\r\n')
         sys.exit(LogLine)
     
     print 'Recibido: \r\n', data
     ListaTexto = data.split('\r\n')
-    txt.write('Received from ' + PROXY + " ".join(ListaTexto))
-    #Ojo al uso de join. Pongo espacios.
+    LogLine = " ".join(ListaTexto)
+    log.write(Time() + ' Received from ' + PROXY + ': ' + LogLine)
     #Así eliminamos los saltos de línea
     if METHOD == "INVITE":
         if ListaTexto[2] == 'SIP/2.0 200 OK':
@@ -132,5 +132,5 @@ if __name__ == "__main__":
 
     # Cerramos todo
     my_socket.close()
-    txt.close()
+    log.close()
     print "Fin."
