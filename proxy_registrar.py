@@ -12,6 +12,27 @@ from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 
 
+def TimeGuay():
+     return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time()))
+
+
+def Log(fich, mode, text, Ip, Port): #BORRAR LOS DEMAS USOS DEL LOG
+    txt = open(fich, 'a')
+    if mode == 'Start':
+        txt.write(TimeGuay() + " Starting...\r\n")
+    elif mode == 'Finish':
+        txt.write(TimeGuay() + " Finishing.\r\n")
+    elif mode == 'Send':
+        txt.write(TimeGuay() + ' Sent to ' + Ip + ':' + str(Port) + ': ' +
+        text + '\r\n')
+    elif mode == 'Receive':
+        txt.write(TimeGuay() + ' Received from ' + Ip + ':' + str(Port) +
+        ': ' + text + '\r\n')
+    elif mode == 'Error':
+        txt.write(Time() + ' ' + text + '\r\n')
+    txt.close()
+
+
 class XMLHandler(ContentHandler):
     """
     Handler para leer XML de configuración de Proxy
@@ -49,7 +70,6 @@ class XMLHandler(ContentHandler):
         return self.Atributos
 
 
-
 class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
     """
     Echo server class
@@ -78,7 +98,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
 
                     LineList = line.split('\r\n')
                     LogLine = " ".join(LineList)
-                    log.write(self.Time() + ' Received from ' + Ip + ':' + 
+                    log.write(TimeGuay() + ' Received from ' + Ip + ':' + 
                     str(Port) + ': ' + LogLine + '\r\n')
 
                     WordList2 = line.split('\r\n')
@@ -101,10 +121,9 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                     OK = "SIP/2.0 200 OK"
                     print "Enviando:\r\n" + OK
 
-                    LogLine = self.Time() + ' Sent to ' + Ip + ':' + str(Port)
+                    LogLine = TimeGuay() + ' Sent to ' + Ip + ':' + str(Port)
                     LogLine += ': ' + OK + '\r\n'
                     log.write(LogLine)
-                    #log.close()
 
                     self.wfile.write(OK + "\r\n\r\n")
                 else:
@@ -129,8 +148,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
             TimeReg + '\t' + str(Expires) + '\n')
         txt.close()
 
-    def Time(self):
-        return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time()))
+
 
 
 """
@@ -162,7 +180,8 @@ if __name__ == "__main__":
     LOG = Dicc['log_path']
 
     log = open(LOG, 'w')
-    log.write(SIPRegisterHandler.Time() + "Starting...")
+    log.write(TimeGuay() + " Starting...\r\n")
+
 
     try:
         # Creamos servidor de eco y escuchamos
@@ -171,6 +190,6 @@ if __name__ == "__main__":
         serv.serve_forever()
     except KeyboardInterrupt:
         print "\r\nFinishing."
-        log.write(SIPRegisterHandler.Time() + "Finishing.")
+        log.write(TimeGuay() + " Finishing.\r\n")
         log.close()
         

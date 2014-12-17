@@ -86,7 +86,7 @@ if __name__ == "__main__":
     LOG = Dicc['log_path']
     SONG = Dicc['audio_path']
 
-    log = open(LOG, 'w') #DEBE COMPARTIRLO CON EL SERVER? DEBEMOS ABRIRLO AQUÍ EN MODO APPEND???
+    log = open(LOG, 'a') #DEBE COMPARTIRLO CON EL SERVER? DEBEMOS ABRIRLO AQUÍ EN MODO APPEND???
 
     # Contenido que vamos a enviar
     Line = METHOD + ' sip:' + NAME + '@' + UASERVER + ' SIP/2.0\r\n'
@@ -106,11 +106,11 @@ if __name__ == "__main__":
         LineList = LogLine.split('\r\n')  # Eliminamos los saltos de línea
         LogLine = " ".join(LineList)  # Ojo al uso de join. Pongo espacios.
         log.write(Time() + ' Sent to ' + PROXY + ': ' + LogLine + '\r\n')
-
+#poner try aqui
         my_socket.send(Line + Option + '\r\n')
         data = my_socket.recv(1024)
 
-    except:
+    except socket.error:
         LogLine = 'Error: No server listening at ' + PR_IP + ' port ' + PR_PORT
         log.write(Time() + ' ' + LogLine + '\r\n')
         sys.exit(LogLine)
@@ -118,7 +118,7 @@ if __name__ == "__main__":
     print 'Recibido: \r\n', data
     ListaTexto = data.split('\r\n')
     LogLine = " ".join(ListaTexto)
-    log.write(Time() + ' Received from ' + PROXY + ': ' + LogLine)
+    log.write(Time() + ' Received from ' + PROXY + ': ' + LogLine + '\r\n')
     #Así eliminamos los saltos de línea
     if METHOD == "INVITE":
         if ListaTexto[2] == 'SIP/2.0 200 OK':

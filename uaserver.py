@@ -15,6 +15,7 @@ from xml.sax.handler import ContentHandler
 def Time():
     return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time()))
 
+#importarlo al client y borrarlo de allí
 class XMLHandler(ContentHandler):
     """
     Handler para leer XML de configuración de User Agents
@@ -97,7 +98,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     print "Enviando: SIP/2.0 400 Bad Request"
                     self.wfile.write('SIP/2.0 400 Bad Request\r\n\r\n')
                     # Error general
-
+#ponerla fuera como funcion del programa
     def Reproducir(self): #PARA IMPORTARLO LUEGO AL CLIENT
         """
         Reproduce un fichero mp3
@@ -134,8 +135,9 @@ if __name__ == "__main__":
     LOG = Dicc['log_path']
     SONG = Dicc['audio_path']
 
-    log = open(LOG, 'w')
-    log.write(Time() + "Starting...")
+    log = open(LOG, 'w') #EN APPEND Y ABRIR Y CERRAR CADA VEZ QUE ESCRIBO
+#HACER FUNCION MEJOR
+    log.write(Time() + " Starting...")
 
     try:
         # Creamos servidor de eco y escuchamos
@@ -144,5 +146,5 @@ if __name__ == "__main__":
         serv.serve_forever()
     except KeyboardInterrupt:
         print "\r\nFinishing."
-        log.write(Time() + "Finishing.")
+        log.write(Time() + " Finishing.")
         log.close()
