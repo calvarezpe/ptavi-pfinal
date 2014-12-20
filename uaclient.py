@@ -6,53 +6,11 @@ Programa de la parte cliente de un UA que abre un socket a un servidor
 
 import socket
 import sys
-import time
 import os
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
-
-
-def Time():
-    return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time()))
-
-class XMLHandler(ContentHandler):
-    """
-    Handler para leer XML de configuración de User Agents
-    """
-
-    def __init__(self):
-        #Diccionario de Listas con todo lo que puedo tener (sólamente para
-        #buscar los nombres, no para guardar valores)
-        self.UADicc = {
-            'account': ['username', 'passwd'],
-            'uaserver': ['ip', 'puerto'],
-            'rtpaudio': ['puerto'],
-            'regproxy': ['ip', 'puerto'],
-            'log': ['path'],
-            'audio': ['path']
-        }
-        self.Atributos = {}
-        #Diccionario donde guardamos los valores de los atributos
-
-    def startElement(self, name, attrs):
-        if name in self.UADicc:
-            for Atributo in self.UADicc[name]:  # busco en la etiqueta=name
-                Clave = name + '_' + Atributo
-                #nombre de las entradas del diccionario
-                if Clave == 'uaserver_ip':
-                    self.Atributos[Clave] = attrs.get(Atributo, "")
-                    if self.Atributos[Clave] == "":
-                        self.Atributos[Clave] = '127.0.0.1'
-                else:
-                    self.Atributos[Clave] = attrs.get(Atributo, "")
-                #Esta funcion guarda el valor de Atributo, si existe en esa
-                #etiqueta, y si no, guarda un string vacío ("").
-                #Así que hacemos un if para que cuando el
-                #atributo sea el ip del server y esté vacío, ponga 127.0.0.1
-           
-
-    def get_tags(self):
-        return self.Atributos
+from proxy_registrar import Log
+from uaserver import XMLHandler
 
 
 """
@@ -65,7 +23,7 @@ if __name__ == "__main__":
         if not os.access(FichConfig, os.F_OK):  # Devuelve True si está el fich
             sys.exit('Usage: python uaclient.py config method option')
         METHOD = sys.argv[2].upper()
-        OPTION = sys.argv[3] # POR QUE NO ME DETECTA ERROR SI PONGO LETRAS?
+        OPTION = sys.argv[3] # OJO AL METER MAL ESTO DETECTARLO LUEGO
     except IndexError:
         sys.exit('Usage: python uaclient.py config method option')
     except ValueError:
@@ -82,11 +40,9 @@ if __name__ == "__main__":
     UASERVER = UA_IP + ':' + UA_PORT
     PR_IP = Dicc['regproxy_ip']
     PR_PORT = Dicc['regproxy_puerto']
-    PROXY = PR_IP + ':' + PR_PORT
     LOG = Dicc['log_path']
     SONG = Dicc['audio_path']
 
-    log = open(LOG, 'a') #DEBE COMPARTIRLO CON EL SERVER? DEBEMOS ABRIRLO AQUÍ EN MODO APPEND???
 
     # Contenido que vamos a enviar
     Line = METHOD + ' sip:' + NAME + '@' + UASERVER + ' SIP/2.0\r\n'
@@ -99,32 +55,34 @@ if __name__ == "__main__":
     my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     my_socket.connect((PR_IP, int(PR_PORT)))
 
-    try:
-        print "Enviando: \r\n" + Line + Option
+    print "Enviando: \r\n" + Line + Option
+    LogLine = Line + Option
+    LineList = LogLine.split('\r\n')  # Eliminamos los saltos de línea
+    LogLine = " ".join(LineList)  # Ojo al uso de join. Pongo espacios.
+    Log(LOG, 'Send', LogLine, PR_IP, PR_PORT)
 
-        LogLine = Line + Option
-        LineList = LogLine.split('\r\n')  # Eliminamos los saltos de línea
-        LogLine = " ".join(LineList)  # Ojo al uso de join. Pongo espacios.
-        log.write(Time() + ' Sent to ' + PROXY + ': ' + LogLine + '\r\n')
-#poner try aqui
+    try:
         my_socket.send(Line + Option + '\r\n')
         data = my_socket.recv(1024)
 
     except socket.error:
         LogLine = 'Error: No server listening at ' + PR_IP + ' port ' + PR_PORT
-        log.write(Time() + ' ' + LogLine + '\r\n')
+        Log(LOG, 'Error', LogLine, '', '')
         sys.exit(LogLine)
     
     print 'Recibido: \r\n', data
     ListaTexto = data.split('\r\n')
     LogLine = " ".join(ListaTexto)
-    log.write(Time() + ' Received from ' + PROXY + ': ' + LogLine + '\r\n')
-    #Así eliminamos los saltos de línea
+    Log(LOG, 'Receive',  LogLine, PR_IP, PR_PORT)
+
     if METHOD == "INVITE":
-        if ListaTexto[2] == 'SIP/2.0 200 OK':
+        if ListaTexto[2] == 'SIP/2.0 200 OK': # COMPROBAR
             Method = "ACK"
             Line = Method + ' sip:' + NAME + '@' + UA_IP + ' SIP/2.0\r\n'
-            print "Enviando: " + Line
+            print "Enviando: \r\n" + Line
+            ListaTexto = Line.split('\r\n')
+            LogLine = " ".join(ListaTexto)
+            Log(LOG, 'Send',  LogLine, PR_IP, PR_PORT)
             my_socket.send(Line + '\r\n')
     # Si estamos en BYE directamente nos salimos tras imprimir data
 
@@ -132,5 +90,4 @@ if __name__ == "__main__":
 
     # Cerramos todo
     my_socket.close()
-    log.close()
     print "Fin."

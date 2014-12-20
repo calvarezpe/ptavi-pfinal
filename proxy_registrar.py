@@ -13,10 +13,18 @@ from xml.sax.handler import ContentHandler
 
 
 def TimeGuay():
-     return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time()))
+    """
+    Devuelve la hora actual en formato Año-Mes-Día-Horas-Minutos-Segundos
+    """
+
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time()))
 
 
-def Log(fich, mode, text, Ip, Port): #BORRAR LOS DEMAS USOS DEL LOG
+def Log(fich, mode, text, Ip, Port):
+    """
+    Escribe en un fichero en modo APPEND
+    """
+
     txt = open(fich, 'a')
     if mode == 'Start':
         txt.write(TimeGuay() + " Starting...\r\n")
@@ -29,7 +37,7 @@ def Log(fich, mode, text, Ip, Port): #BORRAR LOS DEMAS USOS DEL LOG
         txt.write(TimeGuay() + ' Received from ' + Ip + ':' + str(Port) +
         ': ' + text + '\r\n')
     elif mode == 'Error':
-        txt.write(Time() + ' ' + text + '\r\n')
+        txt.write(TimeGuay() + ' ' + text + '\r\n')
     txt.close()
 
 
@@ -89,7 +97,6 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                 break
             else:
                 print line
-                #log = open(LOG, 'a')  # Abrimos en modo append
                 WordList = line.split(' ')
                 if WordList[0] == "REGISTER":
                     User = WordList[1].split(':')[1]
@@ -98,8 +105,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
 
                     LineList = line.split('\r\n')
                     LogLine = " ".join(LineList)
-                    log.write(TimeGuay() + ' Received from ' + Ip + ':' + 
-                    str(Port) + ': ' + LogLine + '\r\n')
+                    Log(LOG, 'Receive', LogLine, Ip, Port)
 
                     WordList2 = line.split('\r\n')
                     Expires = int(WordList2[1].split(' ')[1])
@@ -121,13 +127,11 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                     OK = "SIP/2.0 200 OK"
                     print "Enviando:\r\n" + OK
 
-                    LogLine = TimeGuay() + ' Sent to ' + Ip + ':' + str(Port)
-                    LogLine += ': ' + OK + '\r\n'
-                    log.write(LogLine)
+                    Log(LOG, 'Send', OK, Ip, Port)
 
                     self.wfile.write(OK + "\r\n\r\n")
                 else:
-                    print "Método desconocido"
+                    print "Método desconocido" # más...
 
     def register2file(self):
         """
@@ -179,8 +183,7 @@ if __name__ == "__main__":
     DATABASE = Dicc['database_path']
     LOG = Dicc['log_path']
 
-    log = open(LOG, 'w')
-    log.write(TimeGuay() + " Starting...\r\n")
+    Log(LOG, 'Start', '', '', '')
 
 
     try:
@@ -190,6 +193,5 @@ if __name__ == "__main__":
         serv.serve_forever()
     except KeyboardInterrupt:
         print "\r\nFinishing."
-        log.write(TimeGuay() + " Finishing.\r\n")
-        log.close()
+        Log(LOG, 'Finish', '', '', '')
         

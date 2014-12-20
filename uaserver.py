@@ -6,17 +6,13 @@ Clase (y programa principal) para la parte servidora de un UA en UDP
 
 import SocketServer
 import sys
-import time
 import os
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
+from proxy_registrar import Log
 
 
-def Time():
-    return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time()))
-
-#importarlo al client y borrarlo de allí
-class XMLHandler(ContentHandler):
+class XMLHandler(ContentHandler):  # importarlo al client
     """
     Handler para leer XML de configuración de User Agents
     """
@@ -56,6 +52,19 @@ class XMLHandler(ContentHandler):
         return self.Atributos
 
 
+def Reproducir(IpClient, mp3port): # IMPORTARLO LUEGO AL CLIENT
+    """
+    Reproduce un fichero mp3
+    """
+    # iniciar RTP
+    # aEjecutar es un string con lo que se ha de ejecutar en la shell
+    aEjecutar = './mp32rtp -i ' + IpClient + ' -p ' + str(mp3port)
+    + ' < ' + SONG
+    print "Vamos a ejecutar", aEjecutar
+    os.system(aEjecutar)
+    print "Enviando: Transmisión de datos terminada"
+
+
 class EchoHandler(SocketServer.DatagramRequestHandler):
     """
     Echo server class
@@ -77,8 +86,8 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                 print line
                 WordList = line.split(' ')
                 Method = WordList[0]
-                IP_CLIENT = str(self.client_address[0])
-                if not Method in MethodList:
+                IpClient = str(self.client_address[0])
+                if not Method in MethodList:  # TRATAR Y ESCRIBIR LOG
                     print "Enviando: SIP/2.0 405 Method Not Allowed"
                     self.wfile.write('SIP/2.0 405 Method Not Allowed\r\n\r\n')
                     break  # Se detiene. Error específico.
@@ -90,7 +99,8 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     print "Enviando: SIP/2.0 200 OK"
                     self.wfile.write('SIP/2.0 200 OK\r\n\r\n')
                 elif Method == "ACK":
-                    Reproducir()
+                    mp3port = '23032' #OJO TAMBIEN PUEDE SER 23033
+                    Reproducir(IpClient, mp3port)
                 elif Method == "BYE":
                     print "Enviando: SIP/2.0 200 OK"
                     self.wfile.write('SIP/2.0 200 OK\r\n\r\n')
@@ -98,18 +108,6 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     print "Enviando: SIP/2.0 400 Bad Request"
                     self.wfile.write('SIP/2.0 400 Bad Request\r\n\r\n')
                     # Error general
-#ponerla fuera como funcion del programa
-    def Reproducir(self): #PARA IMPORTARLO LUEGO AL CLIENT
-        """
-        Reproduce un fichero mp3
-        """
-        # iniciar RTP
-        # aEjecutar es un string con lo que se ha de ejecutar en la shell
-        aEjecutar = './mp32rtp -i ' + IP_CLIENT + ' -p 23032 < ' + SONG
-#OJO TAMBIEN PUEDE SER 23033
-        print "Vamos a ejecutar", aEjecutar
-        os.system(aEjecutar)
-        print "Enviando: Transmisión de datos terminada"
 
 
 if __name__ == "__main__":
@@ -135,9 +133,7 @@ if __name__ == "__main__":
     LOG = Dicc['log_path']
     SONG = Dicc['audio_path']
 
-    log = open(LOG, 'w') #EN APPEND Y ABRIR Y CERRAR CADA VEZ QUE ESCRIBO
-#HACER FUNCION MEJOR
-    log.write(Time() + " Starting...")
+    Log(LOG, 'Start', '', '', '')
 
     try:
         # Creamos servidor de eco y escuchamos
@@ -146,5 +142,4 @@ if __name__ == "__main__":
         serv.serve_forever()
     except KeyboardInterrupt:
         print "\r\nFinishing."
-        log.write(Time() + " Finishing.")
-        log.close()
+        Log(LOG, 'Finish', '', '', '')
