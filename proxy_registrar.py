@@ -88,7 +88,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
         Manejador de los mensajes recibidos
         """
 
-        print "El cliente " + str(self.client_address) + " nos manda:"
+        print "\r\nEl cliente " + str(self.client_address) + " nos manda:"
         # Escribe dirección y puerto del cliente (de tupla client_address)
         while 1:
             # Leyendo mensaje a mensaje lo que nos envía el cliente
@@ -99,16 +99,17 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                 print line
                 WordList = line.split(' ')
                 if WordList[0] == "REGISTER":
-                    User = WordList[1].split(':')[1]
+                    WordList2 = WordList[1].split(':')
+                    User = WordList2[1]
                     Ip = self.client_address[0]
-                    Port = self.client_address[1]
+                    Port = WordList2[2]
 
                     LineList = line.split('\r\n')
                     LogLine = " ".join(LineList)
                     Log(LOG, 'Receive', LogLine, Ip, Port)
 
-                    WordList2 = line.split('\r\n')
-                    Expires = int(WordList2[1].split(' ')[1])
+                    WordList3 = line.split('\r\n')
+                    Expires = int(WordList3[1].split(' ')[1])
                     #Tiempo en el que expirará
                     Time = time.time()  # hora actual (en segundos)
                     TimeReg = Time  # hora a la que se ha registrado (ahora)
@@ -139,7 +140,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
         """
 
         txt = open(DATABASE, 'w')
-        txt.write('( User\t\t--\t\tIP\t--\tPort -- Register Time\t' +
+        txt.write('(\t User\t\t--\t\tIP\t--\tPort -- Register Time\t' +
         ' -- Expires )\n')
         for User in DiccUsers.keys():
             Ip = DiccUsers[User][0]

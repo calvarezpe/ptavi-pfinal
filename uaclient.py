@@ -37,7 +37,7 @@ if __name__ == "__main__":
     NAME = Dicc['account_username']
     UA_IP = Dicc['uaserver_ip']
     UA_PORT = Dicc['uaserver_puerto']
-    UASERVER = UA_IP + ':' + UA_PORT
+    RTP_PORT = Dicc['rtpaudio_puerto']
     PR_IP = Dicc['regproxy_ip']
     PR_PORT = Dicc['regproxy_puerto']
     LOG = Dicc['log_path']
@@ -45,24 +45,29 @@ if __name__ == "__main__":
 
 
     # Contenido que vamos a enviar
-    Line = METHOD + ' sip:' + NAME + '@' + UASERVER + ' SIP/2.0\r\n'
 
     if METHOD == 'REGISTER':
-        Option = 'Expires: ' + OPTION + '\r\n'
+        Line = METHOD + ' sip:' + NAME + ':' + UA_PORT + ' SIP/2.0\r\n'
+        Body = 'Expires: ' + OPTION + '\r\n'
+    elif METHOD == 'INVITE':
+        Line = METHOD + ' sip:' + OPTION + ' SIP/2.0\r\n'
+        Description = 'V=0\r\no=' + NAME + ' ' + UA_IP 
+        + '\r\ns=Ciudad del Miedo\r\nt=0\r\nm=audio ' + RTP_PORT + ' RTP'
+        Body = 'Content-Type: application/sdp' + '\r\n\r\n' + Description
 
     # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
     my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     my_socket.connect((PR_IP, int(PR_PORT)))
 
-    print "Enviando: \r\n" + Line + Option
-    LogLine = Line + Option
+    print "Enviando: \r\n" + Line + Body
+    LogLine = Line + Body
     LineList = LogLine.split('\r\n')  # Eliminamos los saltos de línea
     LogLine = " ".join(LineList)  # Ojo al uso de join. Pongo espacios.
     Log(LOG, 'Send', LogLine, PR_IP, PR_PORT)
 
     try:
-        my_socket.send(Line + Option + '\r\n')
+        my_socket.send(Line + Body + '\r\n')
         data = my_socket.recv(1024)
 
     except socket.error:

@@ -1,7 +1,7 @@
 <?xml version= "1.0" encoding= "UTF-8" ?>
 
     <config>
-        <account username="Abel2" passwd=""/>
+        <account username="Abel2@sinestress.com" passwd=""/>
         <uaserver ip="" puerto="7002"/>
         <rtpaudio puerto="23033"/>
         <regproxy ip="127.0.0.1" puerto="5001"/>
