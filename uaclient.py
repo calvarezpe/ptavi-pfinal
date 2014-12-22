@@ -49,10 +49,12 @@ if __name__ == "__main__":
     if METHOD == 'REGISTER':
         Line = METHOD + ' sip:' + NAME + ':' + UA_PORT + ' SIP/2.0\r\n'
         Body = 'Expires: ' + OPTION + '\r\n'
+
     elif METHOD == 'INVITE':
         Line = METHOD + ' sip:' + OPTION + ' SIP/2.0\r\n'
         Description = 'V=0\r\no=' + NAME + ' ' + UA_IP 
-        + '\r\ns=Ciudad del Miedo\r\nt=0\r\nm=audio ' + RTP_PORT + ' RTP'
+        Description += '\r\ns=Ciudad del Miedo\r\nt=0\r\nm=audio ' 
+        Description += str(RTP_PORT) + ' RTP\r\n'
         Body = 'Content-Type: application/sdp' + '\r\n\r\n' + Description
 
     # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
@@ -80,7 +82,7 @@ if __name__ == "__main__":
     LogLine = " ".join(ListaTexto)
     Log(LOG, 'Receive',  LogLine, PR_IP, PR_PORT)
 
-    if METHOD == "INVITE":
+    if METHOD == "INVITE":  #   AQUÍ ME QUEDÉ, RECIBIR EL PUERTO RTP DEL OK
         if ListaTexto[2] == 'SIP/2.0 200 OK': # COMPROBAR
             Method = "ACK"
             Line = Method + ' sip:' + NAME + '@' + UA_IP + ' SIP/2.0\r\n'
@@ -89,7 +91,7 @@ if __name__ == "__main__":
             LogLine = " ".join(ListaTexto)
             Log(LOG, 'Send',  LogLine, PR_IP, PR_PORT)
             my_socket.send(Line + '\r\n')
-    # Si estamos en BYE directamente nos salimos tras imprimir data
+    # Si estamos en BYE directamente nos salimos tras imprimir dat.. Y EL OK???
 
     print "Terminando socket..."
 

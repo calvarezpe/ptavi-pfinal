@@ -12,7 +12,7 @@ from xml.sax.handler import ContentHandler
 from proxy_registrar import Log
 
 
-class XMLHandler(ContentHandler):  # importarlo al client
+class XMLHandler(ContentHandler):  # Importado al Client
     """
     Handler para leer XML de configuración de User Agents
     """
@@ -52,7 +52,7 @@ class XMLHandler(ContentHandler):  # importarlo al client
         return self.Atributos
 
 
-def Reproducir(IpClient, mp3port): # IMPORTARLO LUEGO AL CLIENT
+def Reproducir(IpClient, mp3port): # Importado al Client!!!!!!!!!!!!!!
     """
     Reproduce un fichero mp3
     """
@@ -86,27 +86,57 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                 print line
                 WordList = line.split(' ')
                 Method = WordList[0]
-                IpClient = str(self.client_address[0])
-                if not Method in MethodList:  # TRATAR Y ESCRIBIR LOG
-                    print "Enviando: SIP/2.0 405 Method Not Allowed"
+                IpProxy = self.client_address[0]
+                PortProxy = self.client_address[1]
+
+                LineList = line.split('\r\n')
+                LogLine = " ".join(LineList)
+                Log(LOG, 'Receive', LogLine, IpProxy, PortProxy)
+
+                if not Method in MethodList:
+                    LogLine = "SIP/2.0 405 Method Not Allowed\r\n"
+                    Log(LOG, 'Error', LogLine, '', '')
+                    print "Enviando:\r\n" + LogLine
                     self.wfile.write('SIP/2.0 405 Method Not Allowed\r\n\r\n')
                     break  # Se detiene. Error específico.
+
                 if Method == "INVITE":
-                    print "Enviando: SIP/2.0 100 Trying"
-                    self.wfile.write('SIP/2.0 100 Trying\r\n\r\n')
-                    print "Enviando: SIP/2.0 180 Ringing"
-                    self.wfile.write('SIP/2.0 180 Ringing\r\n\r\n')
-                    print "Enviando: SIP/2.0 200 OK"
-                    self.wfile.write('SIP/2.0 200 OK\r\n\r\n')
+                    PortRTP = WordList[-2]  # Penúltimo dato
+                    
+                    LogLine = 'SIP/2.0 100 Trying\r\n'
+                    Log(LOG, 'Send', LogLine, IpProxy, PortProxy)
+                    print "Enviando:\r\n" + LogLine
+                    self.wfile.write(LogLine + '\r\n')
+
+                    LogLine = 'SIP/2.0 180 Ringing\r\n'
+                    Log(LOG, 'Send', LogLine, IpProxy, PortProxy)
+                    print "Enviando:\r\n" + LogLine
+                    self.wfile.write(LogLine + '\r\n')
+
+                    LogLine = 'SIP/2.0 200 OK\r\n'  
+                    # Añadimos SDP (con nuestro puerto rtp)
+                    Description = LineList[3] + '\r\n'  # v
+                    Description += LineList[4] + '\r\n'  # o
+                    Description += LineList[5] + '\r\n'  # s
+                    Description += LineList[6] + '\r\n'  # t
+                    Description += 'm=audio ' + str(RTP_PORT) + ' RTP\r\n'
+                    Body = LineList[1] + '\r\n\r\n' + Description
+                    LogLine += Body
+                    Log(LOG, 'Send', LogLine, IpProxy, PortProxy)
+                    print "Enviando:\r\n" + LogLine
+                    self.wfile.write(LogLine + '\r\n')
+
                 elif Method == "ACK":
                     mp3port = '23032' #OJO TAMBIEN PUEDE SER 23033
-                    Reproducir(IpClient, mp3port)
+                    #Reproducir(IpClient, mp3port)
                 elif Method == "BYE":
                     print "Enviando: SIP/2.0 200 OK"
                     self.wfile.write('SIP/2.0 200 OK\r\n\r\n')
                 else:
-                    print "Enviando: SIP/2.0 400 Bad Request"
-                    self.wfile.write('SIP/2.0 400 Bad Request\r\n\r\n')
+                    LogLine = "SIP/2.0 400 Bad Request\r\n"
+                    Log(LOG, 'Error', LogLine, '', '')
+                    print "Enviando:\r\n" + LogLine
+                    self.wfile.write(LogLine + '\r\n')
                     # Error general
 
 
@@ -130,6 +160,7 @@ if __name__ == "__main__":
     Dicc = Handler.get_tags() # Diccionario con los atributos del fichero xml
     IP = Dicc['uaserver_ip']
     PORT = Dicc['uaserver_puerto']
+    RTP_PORT = Dicc['rtpaudio_puerto']
     LOG = Dicc['log_path']
     SONG = Dicc['audio_path']
 

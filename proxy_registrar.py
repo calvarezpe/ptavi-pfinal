@@ -4,6 +4,7 @@
 Clase (y programa principal) para un servidor proxy/registrar
 """
 
+import socket
 import SocketServer
 import sys
 import time
@@ -78,6 +79,7 @@ class XMLHandler(ContentHandler):
         return self.Atributos
 
 
+
 class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
     """
     Echo server class
@@ -97,23 +99,31 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                 break
             else:
                 print line
+                Ip = self.client_address[0]
+                Port = self.client_address[1]
+
+                LineList = line.split('\r\n')
+                LogLine = " ".join(LineList)
+                Log(LOG, 'Receive', LogLine, Ip, Port)
+
                 WordList = line.split(' ')
-                if WordList[0] == "REGISTER":
+                Method = WordList[0]
+                if not Method in MethodList:
+                    LogLine = "SIP/2.0 405 Method Not Allowed\r\n"
+                    Log(LOG, 'Error', LogLine, '', '')
+                    print "Enviando:\r\n" + LogLine
+                    self.wfile.write(LogLine + '\r\n')
+                    break  # Se detiene. Error específico.
+
+                if Method == "REGISTER":
                     WordList2 = WordList[1].split(':')
                     User = WordList2[1]
-                    Ip = self.client_address[0]
-                    Port = WordList2[2]
-
-                    LineList = line.split('\r\n')
-                    LogLine = " ".join(LineList)
-                    Log(LOG, 'Receive', LogLine, Ip, Port)
-
-                    WordList3 = line.split('\r\n')
-                    Expires = int(WordList3[1].split(' ')[1])
+                    PortServ = WordList2[2]
+                    Expires = int(LineList[1].split(' ')[1])
                     #Tiempo en el que expirará
                     Time = time.time()  # hora actual (en segundos)
                     TimeReg = Time  # hora a la que se ha registrado (ahora)
-                    Data = [Ip, Port, TimeReg, Expires]
+                    Data = [Ip, PortServ, TimeReg, Expires]
                     DiccUsers[User] = Data
                     #Añadimos la lista con los datos al diccionario de usuarios
                     for User in DiccUsers.keys():
@@ -127,12 +137,36 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
 
                     OK = "SIP/2.0 200 OK"
                     print "Enviando:\r\n" + OK
-
                     Log(LOG, 'Send', OK, Ip, Port)
-
                     self.wfile.write(OK + "\r\n\r\n")
+
+                elif Method == "INVITE":
+                    WordList2 = WordList[1].split(':')
+                    Name2 = WordList2[1]  # Al que va dirigido el INVITE
+                    Ip2 = DiccUsers[Name2][0]  # Buscamos su Ip y PuertoServ.
+                    Port2 = DiccUsers[Name2][1]
+                    
+                    print "Redirigiendo mensaje a su destinatario\r\n"
+                    Log(LOG, 'Send', LogLine, Ip2, Port2)
+
+                    Data = self.Reenviar(Ip2, Port2, line)  # Contestación
+
+                    print "Respuesta:\r\n" + Data
+                    LineList = Data.split('\r\n')
+                    LogLine = " ".join(LineList)
+                    Log(LOG, 'Receive', LogLine, Ip2, Port2)
+
+                    print "Redirigiendo respuesta al emisor de la petición\r\n"
+                    Log(LOG, 'Send', LogLine, Ip, Port)
+
+                    self.wfile.write(Data)  # Devolvemos la contestación
+                    
                 else:
-                    print "Método desconocido" # más...
+                    LogLine = "SIP/2.0 400 Bad Request\r\n"
+                    Log(LOG, 'Error', LogLine, '', '')
+                    print "Enviando:\r\n" + LogLine
+                    self.wfile.write(LogLine + '\r\n')
+                    # Error general
 
     def register2file(self):
         """
@@ -153,6 +187,17 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
             TimeReg + '\t' + str(Expires) + '\n')
         txt.close()
 
+    def Reenviar(self, Ip, Port, Data):
+        """
+        Función que reenvía datos a otro User Agent y recibe su respuesta 
+        """
+
+        my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        my_socket.connect((Ip, int(Port)))
+
+        my_socket.send(Data)
+        return my_socket.recv(1024)  # Lo que nos contesta
 
 
 
@@ -162,6 +207,7 @@ Programa Principal
 
 if __name__ == "__main__":
     DiccUsers = {}  # Creo el diccionario de usuarios e IPs
+    MethodList = ["REGISTER", "INVITE", "ACK", "BYE"]
 
     try:
         FichConfig = sys.argv[1]    #FICHERO XML
