@@ -11,6 +11,7 @@ from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 from proxy_registrar import Log
 from uaserver import XMLHandler
+from uaserver import Reproducir
 
 
 """
@@ -35,7 +36,7 @@ if __name__ == "__main__":
     parser.parse(open(FichConfig))
     Dicc = Handler.get_tags() # Diccionario con los atributos del fichero xml
     NAME = Dicc['account_username']
-    UA_IP = Dicc['uaserver_ip']
+    UAS_IP = Dicc['uaserver_ip']
     UA_PORT = Dicc['uaserver_puerto']
     RTP_PORT = Dicc['rtpaudio_puerto']
     PR_IP = Dicc['regproxy_ip']
@@ -48,14 +49,18 @@ if __name__ == "__main__":
 
     if METHOD == 'REGISTER':
         Line = METHOD + ' sip:' + NAME + ':' + UA_PORT + ' SIP/2.0\r\n'
-        Body = 'Expires: ' + OPTION + '\r\n'
+        Body = 'Expires: ' + OPTION + '\r\n\r\n'
 
     elif METHOD == 'INVITE':
         Line = METHOD + ' sip:' + OPTION + ' SIP/2.0\r\n'
-        Description = 'V=0\r\no=' + NAME + ' ' + UA_IP 
+        Description = 'v=0\r\no=' + NAME + ' ' + UAS_IP 
         Description += '\r\ns=Ciudad del Miedo\r\nt=0\r\nm=audio ' 
         Description += str(RTP_PORT) + ' RTP\r\n'
         Body = 'Content-Type: application/sdp' + '\r\n\r\n' + Description
+
+    elif METHOD == 'BYE':
+        Line = METHOD + ' sip:' + OPTION + ' SIP/2.0\r\n\r\n'
+        Body = ''
 
     # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
     my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -82,16 +87,27 @@ if __name__ == "__main__":
     LogLine = " ".join(ListaTexto)
     Log(LOG, 'Receive',  LogLine, PR_IP, PR_PORT)
 
-    if METHOD == "INVITE":  #   AQUÍ ME QUEDÉ, RECIBIR EL PUERTO RTP DEL OK
-        if ListaTexto[2] == 'SIP/2.0 200 OK': # COMPROBAR
+    if METHOD == "INVITE":
+        if ListaTexto[0] == 'SIP/2.0 100 Trying':
+            WordList = data.split(' ')
+            PortRTP = WordList[-2]  # Datos para enviar mp3 al mandar el ACK
+            IpClient = WordList[8].split('\r\n')[0]
+
+            #Enviamos el ACK
             Method = "ACK"
-            Line = Method + ' sip:' + NAME + '@' + UA_IP + ' SIP/2.0\r\n'
+            Line = Method + ' sip:' + OPTION + ' SIP/2.0\r\n'
             print "Enviando: \r\n" + Line
             ListaTexto = Line.split('\r\n')
             LogLine = " ".join(ListaTexto)
             Log(LOG, 'Send',  LogLine, PR_IP, PR_PORT)
             my_socket.send(Line + '\r\n')
-    # Si estamos en BYE directamente nos salimos tras imprimir dat.. Y EL OK???
+
+            #Comenzamos la transmisión de mp3
+            Reproducir(IpClient, PortRTP, SONG)
+
+        #Si nos devuelven un Not Found terminamos directamente
+
+    #Al enviar el BYE, en cuanto recibamos el OK terminamos
 
     print "Terminando socket..."
 

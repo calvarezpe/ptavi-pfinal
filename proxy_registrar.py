@@ -143,24 +143,82 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                 elif Method == "INVITE":
                     WordList2 = WordList[1].split(':')
                     Name2 = WordList2[1]  # Al que va dirigido el INVITE
-                    Ip2 = DiccUsers[Name2][0]  # Buscamos su Ip y PuertoServ.
-                    Port2 = DiccUsers[Name2][1]
-                    
-                    print "Redirigiendo mensaje a su destinatario\r\n"
+                    if Name2 in DiccUsers:
+                    #devuelve True si existe la clave en el dicc, False si no
+                        Ip2 = DiccUsers[Name2][0]  # Buscamos su Ip y
+                        Port2 = DiccUsers[Name2][1]  # PuertoServ.
+                        Found = True
+                    else:
+                        LogLine = 'SIP/2.0 404 User Not Found\r\n'
+                        Log(LOG, 'Error', LogLine, '', '')
+                        print "Enviando:\r\n" + LogLine
+                        self.wfile.write(LogLine + '\r\n')
+                        Found = False
+
+                    if Found:
+                        print "Reenviando mensaje a su destinatario\r\n"
+                        Log(LOG, 'Send', LogLine, Ip2, Port2)
+
+                        Data = self.Reenviar(Ip2, Port2, line)  # Contestación
+
+                        print "Respuesta:\r\n" + Data
+                        LineList = Data.split('\r\n')
+                        LogLine = " ".join(LineList)
+                        Log(LOG, 'Receive', LogLine, Ip2, Port2)
+
+                        print "Reenviando respuesta al emisor del INVITE\r\n"
+                        Log(LOG, 'Send', LogLine, Ip, Port)
+
+                        self.wfile.write(Data)  # Devolvemos la contestación
+
+                elif Method == 'ACK':
+                    WordList2 = WordList[1].split(':')
+                    Name2 = WordList2[1]  # Al que va dirigido el ACK
+                    Ip2 = DiccUsers[Name2][0]  # Buscamos su Ip y
+                    Port2 = DiccUsers[Name2][1]  # PuertoServ.
+
+                    print "Reenviando mensaje a su destinatario\r\n"
                     Log(LOG, 'Send', LogLine, Ip2, Port2)
 
-                    Data = self.Reenviar(Ip2, Port2, line)  # Contestación
+                    #no usamos Reenviar porque no vamos a esperar respuesta
+                    my_socket = socket.socket(socket.AF_INET,
+                    socket.SOCK_DGRAM)
+                    my_socket.setsockopt(socket.SOL_SOCKET,
+                    socket.SO_REUSEADDR, 1)
+                    my_socket.connect((Ip2, int(Port2)))
+                    my_socket.send(line)
 
-                    print "Respuesta:\r\n" + Data
-                    LineList = Data.split('\r\n')
-                    LogLine = " ".join(LineList)
-                    Log(LOG, 'Receive', LogLine, Ip2, Port2)
+                elif Method == 'BYE':
+                    WordList2 = WordList[1].split(':')
+                    Name2 = WordList2[1]  # Al que va dirigido el ACK
+                    if Name2 in DiccUsers:
+                    #Puede que ya no esté, así que lo comprobamos
+                        Ip2 = DiccUsers[Name2][0]
+                        Port2 = DiccUsers[Name2][1]
+                        Found = True
+                    else:
+                        LogLine = 'SIP/2.0 404 User Not Found\r\n'
+                        Log(LOG, 'Error', LogLine, '', '')
+                        print "Enviando:\r\n" + LogLine
+                        self.wfile.write(LogLine + '\r\n')
+                        Found = False
 
-                    print "Redirigiendo respuesta al emisor de la petición\r\n"
-                    Log(LOG, 'Send', LogLine, Ip, Port)
+                    if Found:
+                        print "Reenviando mensaje a su destinatario\r\n"
+                        Log(LOG, 'Send', LogLine, Ip2, Port2)
 
-                    self.wfile.write(Data)  # Devolvemos la contestación
-                    
+                        Data = self.Reenviar(Ip2, Port2, line)  # Contestación
+
+                        print "Respuesta:\r\n" + Data
+                        LineList = Data.split('\r\n')
+                        LogLine = " ".join(LineList)
+                        Log(LOG, 'Receive', LogLine, Ip2, Port2)
+
+                        print "Reenviando respuesta al emisor del BYE\r\n"
+                        Log(LOG, 'Send', LogLine, Ip, Port)
+
+                        self.wfile.write(Data)  # Devolvemos la contestación
+
                 else:
                     LogLine = "SIP/2.0 400 Bad Request\r\n"
                     Log(LOG, 'Error', LogLine, '', '')

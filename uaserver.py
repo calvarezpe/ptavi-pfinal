@@ -52,17 +52,17 @@ class XMLHandler(ContentHandler):  # Importado al Client
         return self.Atributos
 
 
-def Reproducir(IpClient, mp3port): # Importado al Client!!!!!!!!!!!!!!
+def Reproducir(IpClient, mp3port, Song): # Importado al Client
     """
     Reproduce un fichero mp3
     """
     # iniciar RTP
     # aEjecutar es un string con lo que se ha de ejecutar en la shell
     aEjecutar = './mp32rtp -i ' + IpClient + ' -p ' + str(mp3port)
-    + ' < ' + SONG
+    aEjecutar += ' < ' + Song
     print "Vamos a ejecutar", aEjecutar
     os.system(aEjecutar)
-    print "Enviando: Transmisión de datos terminada"
+    print "Transmisión de datos terminada"
 
 
 class EchoHandler(SocketServer.DatagramRequestHandler):
@@ -75,6 +75,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
         Servidor de recepción que contesta a peticiones INVITE del cliente
         descargando un archivo mp3, y a peticiones BYE
         """
+
         print "El cliente " + str(self.client_address) + " nos manda:"
         # Escribe dirección y puerto del cliente (de tupla client_address)
         while 1:
@@ -101,7 +102,9 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     break  # Se detiene. Error específico.
 
                 if Method == "INVITE":
-                    PortRTP = WordList[-2]  # Penúltimo dato
+                    DiccData['PortRTP'] = WordList[-2]  # Penúltimo dato
+                    DiccData['IpClient'] = WordList[4].split('\r\n')[0]
+                    #Datos para transmitir mp3 cuando llegue el ACK
                     
                     LogLine = 'SIP/2.0 100 Trying\r\n'
                     Log(LOG, 'Send', LogLine, IpProxy, PortProxy)
@@ -116,7 +119,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     LogLine = 'SIP/2.0 200 OK\r\n'  
                     # Añadimos SDP (con nuestro puerto rtp)
                     Description = LineList[3] + '\r\n'  # v
-                    Description += LineList[4] + '\r\n'  # o
+                    Description += 'o=' + NAME + ' ' + IP + '\r\n'  # o
                     Description += LineList[5] + '\r\n'  # s
                     Description += LineList[6] + '\r\n'  # t
                     Description += 'm=audio ' + str(RTP_PORT) + ' RTP\r\n'
@@ -127,17 +130,21 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     self.wfile.write(LogLine + '\r\n')
 
                 elif Method == "ACK":
-                    mp3port = '23032' #OJO TAMBIEN PUEDE SER 23033
-                    #Reproducir(IpClient, mp3port)
+                    Reproducir(DiccData['IpClient'], DiccData['PortRTP'], SONG)
+
                 elif Method == "BYE":
-                    print "Enviando: SIP/2.0 200 OK"
-                    self.wfile.write('SIP/2.0 200 OK\r\n\r\n')
+                    LogLine = 'SIP/2.0 200 OK\r\n'
+                    Log(LOG, 'Send', LogLine, IpProxy, PortProxy)
+                    print "Enviando:\r\n" + LogLine
+                    self.wfile.write(LogLine + '\r\n')
+
                 else:
                     LogLine = "SIP/2.0 400 Bad Request\r\n"
                     Log(LOG, 'Error', LogLine, '', '')
                     print "Enviando:\r\n" + LogLine
                     self.wfile.write(LogLine + '\r\n')
                     # Error general
+
 
 
 if __name__ == "__main__":
@@ -158,11 +165,14 @@ if __name__ == "__main__":
     parser.setContentHandler(Handler)
     parser.parse(open(FichConfig))
     Dicc = Handler.get_tags() # Diccionario con los atributos del fichero xml
+    NAME = Dicc['account_username']
     IP = Dicc['uaserver_ip']
     PORT = Dicc['uaserver_puerto']
     RTP_PORT = Dicc['rtpaudio_puerto']
     LOG = Dicc['log_path']
     SONG = Dicc['audio_path']
+
+    DiccData = {'PortRTP' : ' ', 'IpClient' : ' '}
 
     Log(LOG, 'Start', '', '', '')
 
