@@ -23,7 +23,7 @@ def TimeGuay():
 
 def Log(fich, mode, text, Ip, Port):
     """
-    Escribe en un fichero en modo APPEND
+    Escribe en un fichero de log en modo APPEND
     """
 
     txt = open(fich, 'a')
@@ -87,7 +87,9 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
 
     def handle(self):
         """
-        Manejador de los mensajes recibidos
+        Manejador de los mensajes recibidos. Registra a usuarios que mandan
+        peticiones REGISTER y retransmite mensajes entre dos usuarios 
+        que están registrados.
         """
 
         print "\r\nEl cliente " + str(self.client_address) + " nos manda:"

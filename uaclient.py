@@ -24,7 +24,7 @@ if __name__ == "__main__":
         if not os.access(FichConfig, os.F_OK):  # Devuelve True si está el fich
             sys.exit('Usage: python uaclient.py config method option')
         METHOD = sys.argv[2].upper()
-        OPTION = sys.argv[3] # OJO AL METER MAL ESTO DETECTARLO LUEGO
+        OPTION = sys.argv[3]
     except IndexError:
         sys.exit('Usage: python uaclient.py config method option')
     except ValueError:
@@ -107,7 +107,7 @@ if __name__ == "__main__":
 
         #Si nos devuelven un Not Found terminamos directamente
 
-    #Al enviar el BYE, en cuanto recibamos el OK terminamos
+    #Al enviar el REGISTER o BYE, en cuanto recibamos el OK terminamos
 
     print "Terminando socket..."
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: iso-8859-15 -*-
 """
-Clase (y programa principal) para la parte servidora de un UA en UDP
+Clase (y programa principal) para la parte servidora de un UA
 """
 
 import SocketServer
@@ -172,6 +172,7 @@ if __name__ == "__main__":
     LOG = Dicc['log_path']
     SONG = Dicc['audio_path']
 
+    #Diccionario con los datos del cliente que quiere recibir mp3 por RTP
     DiccData = {'PortRTP' : ' ', 'IpClient' : ' '}
 
     Log(LOG, 'Start', '', '', '')
