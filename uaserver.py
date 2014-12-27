@@ -106,15 +106,15 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     DiccData['IpClient'] = WordList[4].split('\r\n')[0]
                     #Datos para transmitir mp3 cuando llegue el ACK
                     
-                    LogLine = 'SIP/2.0 100 Trying\r\n'
+                    LogLine = 'SIP/2.0 100 Trying'
                     Log(LOG, 'Send', LogLine, IpProxy, PortProxy)
-                    print "Enviando:\r\n" + LogLine
-                    self.wfile.write(LogLine + '\r\n')
+                    print "Enviando:\r\n" + LogLine + '\r\n'
+                    self.wfile.write(LogLine + '\r\n\r\n')
 
-                    LogLine = 'SIP/2.0 180 Ringing\r\n'
+                    LogLine = 'SIP/2.0 180 Ringing'
                     Log(LOG, 'Send', LogLine, IpProxy, PortProxy)
-                    print "Enviando:\r\n" + LogLine
-                    self.wfile.write(LogLine + '\r\n')
+                    print "Enviando:\r\n" + LogLine + '\r\n'
+                    self.wfile.write(LogLine + '\r\n\r\n')
 
                     LogLine = 'SIP/2.0 200 OK\r\n'  
                     # Añadimos SDP (con nuestro puerto rtp)
@@ -125,9 +125,13 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     Description += 'm=audio ' + str(RTP_PORT) + ' RTP\r\n'
                     Body = LineList[1] + '\r\n\r\n' + Description
                     LogLine += Body
+
+                    print "Enviando:\r\n" + LogLine + '\r\n'
+                    self.wfile.write(LogLine + '\r\n\r\n')
+
+                    LineList = LogLine.split('\r\n')
+                    LogLine = " ".join(LineList)
                     Log(LOG, 'Send', LogLine, IpProxy, PortProxy)
-                    print "Enviando:\r\n" + LogLine
-                    self.wfile.write(LogLine + '\r\n')
 
                 elif Method == "ACK":
                     Reproducir(DiccData['IpClient'], DiccData['PortRTP'], SONG)

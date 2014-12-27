@@ -101,6 +101,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                 break
             else:
                 print line
+
                 Ip = self.client_address[0]
                 Port = self.client_address[1]
 
@@ -121,8 +122,14 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                     WordList2 = WordList[1].split(':')
                     User = WordList2[1]
                     PortServ = WordList2[2]
-                    Expires = int(LineList[1].split(' ')[1])
-                    #Tiempo en el que expirará
+                    try:
+                        Expires = int(LineList[1].split(' ')[1])
+                        #Tiempo en el que expirará
+                    except:
+                        err = 'Introduzca un valor de Expires entero >= 0'
+                        print err
+                        self.wfile.write(err)
+                        break
                     Time = time.time()  # hora actual (en segundos)
                     TimeReg = Time  # hora a la que se ha registrado (ahora)
                     Data = [Ip, PortServ, TimeReg, Expires]
@@ -143,6 +150,15 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                     self.wfile.write(OK + "\r\n\r\n")
 
                 elif Method == "INVITE":
+                    #Comprobar si está registrado
+                    owner = LineList[4]
+                    Name1 = owner.split(' ')[0].split('=')[1]
+                    if not Name1 in DiccUsers:
+                        err = 'Necesario registro previo'
+                        print err
+                        self.wfile.write(err)
+                        break
+
                     WordList2 = WordList[1].split(':')
                     Name2 = WordList2[1]  # Al que va dirigido el INVITE
                     if Name2 in DiccUsers:

@@ -61,6 +61,8 @@ if __name__ == "__main__":
     elif METHOD == 'BYE':
         Line = METHOD + ' sip:' + OPTION + ' SIP/2.0\r\n\r\n'
         Body = ''
+    else:
+        sys.exit('Método no contemplado')
 
     # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
     my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
