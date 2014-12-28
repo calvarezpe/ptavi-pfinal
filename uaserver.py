@@ -19,8 +19,8 @@ class XMLHandler(ContentHandler):  # Importado al Client
     """
 
     def __init__(self):
-        #Diccionario de Listas con todo lo que puedo tener (sólamente para
-        #buscar los nombres, no para guardar valores)
+        # Diccionario de Listas con todo lo que puedo tener (sólamente para
+        # buscar los nombres, no para guardar valores)
         self.UADicc = {
             'account': ['username', 'passwd'],
             'uaserver': ['ip', 'puerto'],
@@ -30,24 +30,23 @@ class XMLHandler(ContentHandler):  # Importado al Client
             'audio': ['path']
         }
         self.Atributos = {}
-        #Diccionario donde guardamos los valores de los atributos
+        # Diccionario donde guardamos los valores de los atributos
 
     def startElement(self, name, attrs):
         if name in self.UADicc:
             for Atributo in self.UADicc[name]:  # busco en la etiqueta=name
                 Clave = name + '_' + Atributo
-                #nombre de las entradas del diccionario
+                # nombre de las entradas del diccionario
                 if Clave == 'uaserver_ip':
                     self.Atributos[Clave] = attrs.get(Atributo, "")
                     if self.Atributos[Clave] == "":
                         self.Atributos[Clave] = '127.0.0.1'
                 else:
                     self.Atributos[Clave] = attrs.get(Atributo, "")
-                #Esta funcion guarda el valor de Atributo, si existe en esa
-                #etiqueta, y si no, guarda un string vacío ("").
-                #Así que hacemos un if para que cuando el
-                #atributo sea el ip del server y esté vacío, ponga 127.0.0.1
-           
+                # Esta funcion guarda el valor de Atributo, si existe en esa
+                # etiqueta, y si no, guarda un string vacío ("").
+                # Así que hacemos un if para que cuando el
+                # atributo sea el ip del server y esté vacío, ponga 127.0.0.1
 
     def get_tags(self):
         return self.Atributos
@@ -61,18 +60,19 @@ class VLCThread(threading.Thread):
         self.mp3port = mp3port
 
     def run(self):
-        #Ponemos el vlc a escuchar para la reproducción por los altavoces
-        #en segundo plano (&)
+        # Ponemos el vlc a escuchar para la reproducción por los altavoces
+        # en segundo plano (&)
         aEjecutar1 = 'cvlc rtp://@' + self.IpClient + ':' + self.mp3port + ' &'
         print "Vamos a ejecutar", aEjecutar1
         os.system(aEjecutar1)
 
-def Reproducir(IpClient, mp3port, Song): # Importado al Client
+
+def Reproducir(IpClient, mp3port, Song):  # Importado al Client
     """
     Reproduce un fichero mp3
     """
 
-    #Llamamos al Hilo que lanzará el VLC paralelamente
+    # Llamamos al Hilo que lanzará el VLC paralelamente
     t = VLCThread(IpClient, mp3port)
     t.start()
 
@@ -114,7 +114,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                 LogLine = " ".join(LineList)
                 Log(LOG, 'Receive', LogLine, IpProxy, PortProxy)
 
-                if not Method in MethodList:
+                if Method not in MethodList:
                     LogLine = "SIP/2.0 405 Method Not Allowed\r\n"
                     Log(LOG, 'Error', LogLine, '', '')
                     print "Enviando:\r\n" + LogLine
@@ -124,8 +124,8 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                 if Method == "INVITE":
                     DiccData['PortRTP'] = WordList[-2]  # Penúltimo dato
                     DiccData['IpClient'] = WordList[4].split('\r\n')[0]
-                    #Datos para transmitir mp3 cuando llegue el ACK
-                    
+                    # Datos para transmitir mp3 cuando llegue el ACK
+
                     LogLine = 'SIP/2.0 100 Trying'
                     Log(LOG, 'Send', LogLine, IpProxy, PortProxy)
                     print "Enviando:\r\n" + LogLine + '\r\n'
@@ -136,7 +136,7 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     print "Enviando:\r\n" + LogLine + '\r\n'
                     self.wfile.write(LogLine + '\r\n\r\n')
 
-                    LogLine = 'SIP/2.0 200 OK\r\n'  
+                    LogLine = 'SIP/2.0 200 OK\r\n'
                     # Añadimos SDP (con nuestro puerto rtp)
                     Description = LineList[3] + '\r\n'  # v
                     Description += 'o=' + NAME + ' ' + IP + '\r\n'  # o
@@ -170,10 +170,9 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
                     # Error general
 
 
-
 if __name__ == "__main__":
     try:
-        FichConfig = sys.argv[1]    #FICHERO XML
+        FichConfig = sys.argv[1]  # FICHERO XML
         # Comprobar que existe el archivo mp3
         if not os.access(FichConfig, os.F_OK):
             sys.exit('Usage: python uaserver.py config')
@@ -188,7 +187,7 @@ if __name__ == "__main__":
     Handler = XMLHandler()
     parser.setContentHandler(Handler)
     parser.parse(open(FichConfig))
-    Dicc = Handler.get_tags() # Diccionario con los atributos del fichero xml
+    Dicc = Handler.get_tags()  # Diccionario con los atributos del fichero xml
     NAME = Dicc['account_username']
     IP = Dicc['uaserver_ip']
     PORT = Dicc['uaserver_puerto']
@@ -196,8 +195,8 @@ if __name__ == "__main__":
     LOG = Dicc['log_path']
     SONG = Dicc['audio_path']
 
-    #Diccionario con los datos del cliente que quiere recibir mp3 por RTP
-    DiccData = {'PortRTP' : ' ', 'IpClient' : ' '}
+    # Diccionario con los datos del cliente que quiere recibir mp3 por RTP
+    DiccData = {'PortRTP': ' ', 'IpClient': ' '}
 
     Log(LOG, 'Start', '', '', '')
 

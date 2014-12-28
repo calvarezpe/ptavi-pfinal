@@ -33,10 +33,10 @@ def Log(fich, mode, text, Ip, Port):
         txt.write(TimeGuay() + " Finishing.\r\n")
     elif mode == 'Send':
         txt.write(TimeGuay() + ' Sent to ' + Ip + ':' + str(Port) + ': ' +
-        text + '\r\n')
+                  text + '\r\n')
     elif mode == 'Receive':
         txt.write(TimeGuay() + ' Received from ' + Ip + ':' + str(Port) +
-        ': ' + text + '\r\n')
+                  ': ' + text + '\r\n')
     elif mode == 'Error':
         txt.write(TimeGuay() + ' ' + text + '\r\n')
     txt.close()
@@ -48,48 +48,49 @@ class XMLHandler(ContentHandler):
     """
 
     def __init__(self):
-        #Diccionario de Listas con todo lo que puedo tener (sólamente para
-        #buscar los nombres, no para guardar valores)
+        # Diccionario de Listas con todo lo que puedo tener (sólamente para
+        # buscar los nombres, no para guardar valores)
         self.UADicc = {
             'server': ['name', 'ip', 'puerto'],
             'database': ['path', 'passwdpath'],
             'log': ['path']
         }
         self.Atributos = {}
-        #Diccionario donde guardamos los valores de los atributos
+        # Diccionario donde guardamos los valores de los atributos
 
     def startElement(self, name, attrs):
         if name in self.UADicc:
             for Atributo in self.UADicc[name]:  # busco en la etiqueta=name
                 Clave = name + '_' + Atributo
-                #nombre de las entradas del diccionario
+                # nombre de las entradas del diccionario
                 if Clave == 'server_ip':
                     self.Atributos[Clave] = attrs.get(Atributo, "")
                     if self.Atributos[Clave] == "":
                         self.Atributos[Clave] = '127.0.0.1'
                 else:
                     self.Atributos[Clave] = attrs.get(Atributo, "")
-                #Esta funcion guarda el valor de Atributo, si existe en esa
-                #etiqueta, y si no, guarda un string vacío ("").
-                #Así que hacemos un if para que cuando el
-                #atributo sea el ip del server y esté vacío, ponga 127.0.0.1
-           
+                # Esta funcion guarda el valor de Atributo, si existe en esa
+                # etiqueta, y si no, guarda un string vacío ("").
+                # Así que hacemos un if para que cuando el
+                # atributo sea el ip del server y esté vacío, ponga 127.0.0.1
 
     def get_tags(self):
         return self.Atributos
 
-"""
-def Security(name, password):
-"""
-#Función para comprobar contraseñas
-"""
-    open(./passwords.txt,'r')
-    LineList = readlines()
-    for i in LineList
-        if LineList[i].split(' ')[0] = name
-            print '1'
-"""
 
+def Security(fich, name, password):
+    """
+    Función para comprobar contraseñas. Devuelve True si es correcta.
+    """
+
+    CorrectPassword = False
+    txt = open(fich, 'r')
+    LineList = txt.readlines()
+    for i in range(len(LineList)):
+        if LineList[i].split(' ')[0] == name:
+            if LineList[i].split(' ')[1][:-1] == password:
+                CorrectPassword = True
+    return CorrectPassword
 
 
 class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
@@ -100,7 +101,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
     def handle(self):
         """
         Manejador de los mensajes recibidos. Registra a usuarios que mandan
-        peticiones REGISTER y retransmite mensajes entre dos usuarios 
+        peticiones REGISTER y retransmite mensajes entre dos usuarios
         que están registrados.
         """
 
@@ -123,7 +124,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
 
                 WordList = line.split(' ')
                 Method = WordList[0]
-                if not Method in MethodList:
+                if Method not in MethodList:
                     LogLine = "SIP/2.0 405 Method Not Allowed\r\n"
                     Log(LOG, 'Error', LogLine, '', '')
                     print "Enviando:\r\n" + LogLine
@@ -136,24 +137,31 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                     PortServ = WordList2[2]
                     try:
                         Expires = int(LineList[1].split(' ')[1])
-                        #Tiempo en el que expirará
+                        # Tiempo en el que expirará
                     except:
                         err = 'Introduzca un valor de Expires entero >= 0'
                         print err
                         self.wfile.write(err)
                         break
+                    Password = LineList[2].split(' ')[1]
+                    if not Security(PASSTXT, User, Password):
+                        err = 'Usuario no autorizado o password incorrecta'
+                        print err
+                        self.wfile.write(err)
+                        break
+                    print 'Contraseña correcta'
                     Time = time.time()  # hora actual (en segundos)
                     TimeReg = Time  # hora a la que se ha registrado (ahora)
                     Data = [Ip, PortServ, TimeReg, Expires]
                     DiccUsers[User] = Data
-                    #Añadimos la lista con los datos al diccionario de usuarios
+                    # Añadimos la lista con los datos al dicc de usuarios
                     for User in DiccUsers.keys():
                         TimeReg = DiccUsers[User][2]
                         Expires = DiccUsers[User][3]
                         TimeExp = TimeReg + Expires  # Hora a la que expirará
                         if Time >= TimeExp:
                             del DiccUsers[User]
-                            #Lo eliminamos del diccionario
+                            # Lo eliminamos del diccionario
                     self.register2file()
 
                     OK = "SIP/2.0 200 OK"
@@ -162,10 +170,10 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                     self.wfile.write(OK + "\r\n\r\n")
 
                 elif Method == "INVITE":
-                    #Comprobar si está registrado
+                    # Comprobar si está registrado
                     owner = LineList[4]
                     Name1 = owner.split(' ')[0].split('=')[1]
-                    if not Name1 in DiccUsers:
+                    if Name1 not in DiccUsers:
                         err = 'Necesario registro previo'
                         print err
                         self.wfile.write(err)
@@ -173,8 +181,8 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
 
                     WordList2 = WordList[1].split(':')
                     Name2 = WordList2[1]  # Al que va dirigido el INVITE
-                    if Name2 in DiccUsers:
-                    #devuelve True si existe la clave en el dicc, False si no
+                    if Name2 in DiccUsers:  # devuelve True si existe la clave
+                        # en el dicc, False si no
                         Ip2 = DiccUsers[Name2][0]  # Buscamos su Ip y
                         Port2 = DiccUsers[Name2][1]  # PuertoServ.
                         Found = True
@@ -210,11 +218,11 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                     print "Reenviando mensaje a su destinatario\r\n"
                     Log(LOG, 'Send', LogLine, Ip2, Port2)
 
-                    #no usamos Reenviar porque no vamos a esperar respuesta
+                    # no usamos Reenviar porque no vamos a esperar respuesta
                     my_socket = socket.socket(socket.AF_INET,
-                    socket.SOCK_DGRAM)
+                                              socket.SOCK_DGRAM)
                     my_socket.setsockopt(socket.SOL_SOCKET,
-                    socket.SO_REUSEADDR, 1)
+                                         socket.SO_REUSEADDR, 1)
                     my_socket.connect((Ip2, int(Port2)))
                     my_socket.send(line)
 
@@ -222,7 +230,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                     WordList2 = WordList[1].split(':')
                     Name2 = WordList2[1]  # Al que va dirigido el ACK
                     if Name2 in DiccUsers:
-                    #Puede que ya no esté, así que lo comprobamos
+                        # Puede que ya no esté, así que lo comprobamos
                         Ip2 = DiccUsers[Name2][0]
                         Port2 = DiccUsers[Name2][1]
                         Found = True
@@ -263,21 +271,21 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
 
         txt = open(DATABASE, 'w')
         txt.write('(\t User\t\t--\t\tIP\t--\tPort -- Register Time\t' +
-        ' -- Expires )\n')
+                  ' -- Expires )\n')
         for User in DiccUsers.keys():
             Ip = DiccUsers[User][0]
             Port = DiccUsers[User][1]
             TimeReg = DiccUsers[User][2]
             Expires = DiccUsers[User][3]
             TimeReg = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(TimeReg))
-            #Lo pasamos a formato guay
-            txt.write(User + '\t' + Ip + '\t' + str(Port) + '\t' + 
-            TimeReg + '\t' + str(Expires) + '\n')
+            # Lo pasamos a formato guay
+            txt.write(User + '\t' + Ip + '\t' + str(Port) + '\t' +
+                      TimeReg + '\t' + str(Expires) + '\n')
         txt.close()
 
     def Reenviar(self, Ip, Port, Data):
         """
-        Función que reenvía datos a otro User Agent y recibe su respuesta 
+        Función que reenvía datos a otro User Agent y recibe su respuesta
         """
 
         my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -286,7 +294,6 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
 
         my_socket.send(Data)
         return my_socket.recv(1024)  # Lo que nos contesta
-
 
 
 """
@@ -298,7 +305,7 @@ if __name__ == "__main__":
     MethodList = ["REGISTER", "INVITE", "ACK", "BYE"]
 
     try:
-        FichConfig = sys.argv[1]    #FICHERO XML
+        FichConfig = sys.argv[1]  # FICHERO XML
         # Comprobar que existe el archivo mp3
         if not os.access(FichConfig, os.F_OK):
             sys.exit('Usage: python proxy_registrar.py config')
@@ -311,15 +318,15 @@ if __name__ == "__main__":
     Handler = XMLHandler()
     parser.setContentHandler(Handler)
     parser.parse(open(FichConfig))
-    Dicc = Handler.get_tags() # Diccionario con los atributos del fichero xml
+    Dicc = Handler.get_tags()  # Diccionario con los atributos del fichero xml
     NAME = Dicc['server_name']
     IP = Dicc['server_ip']
     PORT = Dicc['server_puerto']
     DATABASE = Dicc['database_path']
     LOG = Dicc['log_path']
+    PASSTXT = Dicc['database_passwdpath']
 
     Log(LOG, 'Start', '', '', '')
-
 
     try:
         # Creamos servidor de eco y escuchamos
@@ -329,4 +336,3 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print "\r\nFinishing."
         Log(LOG, 'Finish', '', '', '')
-        
