@@ -49,7 +49,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
         """
         Escribe en un fichero la direccion, la ip y la hora limite
         """
-        fich = open('register.txt', "w")
+        fich = open(list_tags[1]['path'], "w")
         line = "User\tIP\tPort\tExpires\r\n"
         for address in self.addresses.keys():
             time_reg = time.strftime('%Y-%m-%d %H:%M:%S', \
