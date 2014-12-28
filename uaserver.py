@@ -10,6 +10,7 @@ import os
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 from proxy_registrar import Log
+import threading
 
 
 class XMLHandler(ContentHandler):  # Importado al Client
@@ -52,16 +53,35 @@ class XMLHandler(ContentHandler):  # Importado al Client
         return self.Atributos
 
 
+class VLCThread(threading.Thread):
+
+    def __init__(self, IpClient, mp3port):
+        threading.Thread.__init__(self)
+        self.IpClient = IpClient
+        self.mp3port = mp3port
+
+    def run(self):
+        #Ponemos el vlc a escuchar para la reproducción por los altavoces
+        #en segundo plano (&)
+        aEjecutar1 = 'cvlc rtp://@' + self.IpClient + ':' + self.mp3port + ' &'
+        print "Vamos a ejecutar", aEjecutar1
+        os.system(aEjecutar1)
+
 def Reproducir(IpClient, mp3port, Song): # Importado al Client
     """
     Reproduce un fichero mp3
     """
+
+    #Llamamos al Hilo que lanzará el VLC paralelamente
+    t = VLCThread(IpClient, mp3port)
+    t.start()
+
     # iniciar RTP
     # aEjecutar es un string con lo que se ha de ejecutar en la shell
-    aEjecutar = './mp32rtp -i ' + IpClient + ' -p ' + str(mp3port)
-    aEjecutar += ' < ' + Song
-    print "Vamos a ejecutar", aEjecutar
-    os.system(aEjecutar)
+    aEjecutar2 = './mp32rtp -i ' + IpClient + ' -p ' + str(mp3port)
+    aEjecutar2 += ' < ' + Song
+    print "Vamos a ejecutar", aEjecutar2
+    os.system(aEjecutar2)
     print "Transmisión de datos terminada"
 
 

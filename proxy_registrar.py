@@ -78,6 +78,18 @@ class XMLHandler(ContentHandler):
     def get_tags(self):
         return self.Atributos
 
+"""
+def Security(name, password):
+"""
+#Función para comprobar contraseñas
+"""
+    open(./passwords.txt,'r')
+    LineList = readlines()
+    for i in LineList
+        if LineList[i].split(' ')[0] = name
+            print '1'
+"""
+
 
 
 class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
