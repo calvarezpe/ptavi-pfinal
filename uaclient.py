@@ -103,5 +103,5 @@ if __name__ == "__main__":
       print "Error: No server listening at ", SERVER_IP, " port ",
       print str(SERVER_PORT)
 
-	
-
+   # Cerramos todo
+   my_socket.close()
