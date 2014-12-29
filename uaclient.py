@@ -92,6 +92,14 @@ if __name__ == "__main__":
       LINE = method + " sip:" + list_tags[0]['username'] + ':' 
       LINE += list_tags[1]['puerto'] + ' SIP/2.0\r\nExpires: ' + sys.argv[3]
       LINE += '\r\n\r\n'
+   elif method == 'Invite':
+      if not list_tags[1]['ip']:
+         list_tags[1]['ip'] = '127.0.0.1'
+      LINE = method + ' sip:' + sys.argv[3] + ' SIP/2.0\r\n'
+      LINE += 'Content-Type: application/sdp\r\n\r\n'
+      LINE += 'v=0\r\no=' + list_tags[0]['username'] + ' ' + list_tags[1]['ip']
+      LINE += '\r\ns=misesion\r\nt=0\r\nm=audio ' + list_tags[2]['puerto']
+      LINE += ' RTP\r\n\r\n'
       
    try:
       print "Enviando: " + LINE
