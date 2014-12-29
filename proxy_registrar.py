@@ -92,6 +92,26 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
             # Escribimos en el fichero
             self.register2file()
 
+         if method == 'Invite':
+            address_invited = line.split()[1].split(":")[1]
+            if not address_invited in self.addresses:
+               self.wfile.write("SIP/2.0 404 User Not Found\r\n\r\n")
+               print "Usuario no registrado"
+            elif address_invited in self.addresses:
+               print "Comienza la fiesta"
+
+               UAServerIP = self.addresses[address_invited][0]
+               UAServerPort = self.addresses[address_invited][1]
+               print 'lo mandamos a ', UAServerIP, '-', UAServerPort
+               my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+               my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+               my_socket.connect((UAServerIP, int(UAServerPort)))
+               print 'Vamos a mandar: ', line
+               try:
+                  my_socket.send(line)
+               except socket.error:
+                  print 'Error: no server listening'
+
 if __name__ == "__main__":
    # Comprobación de la linea de argumentos
    if len(sys.argv) != 2:
