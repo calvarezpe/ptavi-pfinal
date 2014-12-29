@@ -50,22 +50,25 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
         Escribe en un fichero la direccion, la ip y la hora limite
         """
         fich = open(list_tags[1]['path'], "w")
-        line = "User\tIP\tPort\tExpires\r\n"
+        line = "User\tIP\tPort\tRegister time\tExpires\r\n"
         for address in self.addresses.keys():
-            time_reg = time.strftime('%Y-%m-%d %H:%M:%S', \
-            time.gmtime(self.addresses[address][2]))
             line += address + "\t" + self.addresses[address][0] + "\t"
-            line += self.addresses[address][1] + "\t" + time_reg + "\r\n"
+            line += self.addresses[address][1] + "\t"
+            line += str(self.addresses[address][2]) + "\t"
+            line += str(self.addresses[address][3]) + "\r\n"
         fich.write(line)
 
    def handle(self):
       """
       Servidor proxy y registrar
       """
-
-      # Escribe dirección y puerto del cliente (de tupla client_address)
-      print self.client_address
       while 1:
+         # Comprobar si ha caducado alguno
+         for address in self.addresses.keys():
+            time_expires = self.addresses[address][2] + self.addresses[address][3]
+            if time_expires < time.time():
+               del self.addresses[address]
+
          # Leyendo línea a línea lo que nos envía el cliente
          line = self.rfile.read()
          if not line:
@@ -77,9 +80,8 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
             address = (elements[1].split(":"))[1]
             expires = int(elements[-1])
             if expires > 0:
-               reg_time = float(expires) + time.time()
                port_client = elements[1].split(":")[2]
-               self.addresses[address] = (self.client_address[0], port_client, reg_time)
+               self.addresses[address] = (self.client_address[0], port_client, time.time(), float(expires))
                self.wfile.write("SIP/2.0 200 OK\r\n\r\n")
             elif expires == 0:
                if address in self.addresses:
@@ -87,11 +89,7 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                   self.wfile.write("SIP/2.0 200 OK\r\n\r\n")
                else:
                   self.wfile.write("SIP/2.0 404 User Not Found\r\n\r\n")
-            
-            for address in self.addresses.keys():
-                if self.addresses[address][2] < time.time():
-                    del self.addresses[address]
-            print self.addresses
+            # Escribimos en el fichero
             self.register2file()
 
 if __name__ == "__main__":
