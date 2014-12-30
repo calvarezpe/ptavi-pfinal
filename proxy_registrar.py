@@ -98,8 +98,6 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                self.wfile.write("SIP/2.0 404 User Not Found\r\n\r\n")
                print "Usuario no registrado"
             elif address_invited in self.addresses:
-               print "Comienza la fiesta"
-
                UAServerIP = self.addresses[address_invited][0]
                UAServerPort = self.addresses[address_invited][1]
                print 'lo mandamos a ', UAServerIP, '-', UAServerPort
@@ -108,9 +106,14 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
                my_socket.connect((UAServerIP, int(UAServerPort)))
                print 'Vamos a mandar: ', line
                try:
-                  my_socket.send(line)
+                  # Reenviamos al UAServer el invite
+                  my_socket.send(line) 
+                  # Reenviamos al UAClient que realiza el invite
+                  data = my_socket.recv(1024)
+                  self.wfile.write(data)
                except socket.error:
                   print 'Error: no server listening'
+               my_socket.close()
 
 if __name__ == "__main__":
    # Comprobación de la linea de argumentos
