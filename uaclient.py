@@ -87,7 +87,7 @@ if __name__ == "__main__":
    my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
    my_socket.connect((SERVER_IP, SERVER_PORT))
    
-   #Envio
+   #Envio (La variable method la hemos conseguido al principio)
    if method == 'Register':
       LINE = method + " sip:" + list_tags[0]['username'] + ':' 
       LINE += list_tags[1]['puerto'] + ' SIP/2.0\r\nExpires: ' + sys.argv[3]
