@@ -69,8 +69,19 @@ class EchoHandler(SocketServer.DatagramRequestHandler):
             if not line:
                 break
             print "El cliente nos manda " + line
-            
-            
+            method = line.split(" ")[0]
+            if method == 'Invite':
+               audio_port = line.split(" ")[-2]
+               audio_ip = line.split(" ")[-3].split("\r\n")[0]
+               if not list_tags[1]['ip']:
+                  list_tags[1]['ip'] = '127.0.0.1'
+               SDP = 'v=0\r\no=' + list_tags[0]['username'] + ' '
+               SDP += list_tags[1]['ip'] + '\r\ns=misesion\r\nt=0\r\n'
+               SDP += 'm=audio ' + list_tags[2]['puerto'] + ' RTP\r\n\r\n' 
+               new_line = 'SIP/2.0 100 Trying\r\n\r\nSIP/2.0 180 Ringing'
+               new_line += '\r\n\r\nSIP/2.0 200 OK\r\n'
+               new_line += 'Content-Type: aplication/sdp\r\n\r\n' + SDP
+               self.wfile.write(new_line)
 
 if __name__ == "__main__":
 	# Comprobación de la linea de argumentos
