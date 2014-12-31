@@ -75,45 +75,90 @@ class SIPRegisterHandler(SocketServer.DatagramRequestHandler):
             break
          print "El cliente nos manda " + line
          method = line.split(" ")[0]
-         if method == 'Register':
-            elements = line.split()
-            address = (elements[1].split(":"))[1]
-            expires = int(elements[-1])
-            if expires > 0:
-               port_client = elements[1].split(":")[2]
-               self.addresses[address] = (self.client_address[0], port_client, time.time(), float(expires))
-               self.wfile.write("SIP/2.0 200 OK\r\n\r\n")
-            elif expires == 0:
-               if address in self.addresses:
-                  del self.addresses[address]
-                  self.wfile.write("SIP/2.0 200 OK\r\n\r\n")
-               else:
-                  self.wfile.write("SIP/2.0 404 User Not Found\r\n\r\n")
-            # Escribimos en el fichero
-            self.register2file()
+         method_list = ['Register', 'Invite', 'Ack', 'Bye']
+         head = line.split("\r\n")[0]
+         head_list = head.split(" ")
+         sip = head_list[1].split(":")[0]
+         if len(head_list) == 3 and head_list[2] == "SIP/2.0" and sip == "sip":
+            if method in method_list:
+               if method == 'Register':
+                  elements = line.split()
+                  address = (elements[1].split(":"))[1]
+                  expires = int(elements[-1])
+                  if expires > 0:
+                     port_client = elements[1].split(":")[2]
+                     self.addresses[address] = (self.client_address[0], port_client, time.time(), float(expires))
+                     self.wfile.write("SIP/2.0 200 OK\r\n\r\n")
+                  elif expires == 0:
+                     if address in self.addresses:
+                        del self.addresses[address]
+                        self.wfile.write("SIP/2.0 200 OK\r\n\r\n")
+                     else:
+                        self.wfile.write("SIP/2.0 404 User Not Found\r\n\r\n")
+                  # Escribimos en el fichero
+                  self.register2file()
 
-         if method == 'Invite':
-            address_invited = line.split()[1].split(":")[1]
-            if not address_invited in self.addresses:
-               self.wfile.write("SIP/2.0 404 User Not Found\r\n\r\n")
-               print "Usuario no registrado"
-            elif address_invited in self.addresses:
-               UAServerIP = self.addresses[address_invited][0]
-               UAServerPort = self.addresses[address_invited][1]
-               print 'lo mandamos a ', UAServerIP, '-', UAServerPort
-               my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-               my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-               my_socket.connect((UAServerIP, int(UAServerPort)))
-               print 'Vamos a mandar: ', line
-               try:
-                  # Reenviamos al UAServer el invite
-                  my_socket.send(line) 
-                  # Reenviamos al UAClient que realiza el invite
-                  data = my_socket.recv(1024)
-                  self.wfile.write(data)
-               except socket.error:
-                  print 'Error: no server listening'
-               my_socket.close()
+               if method == 'Invite':
+                  address_invited = line.split()[1].split(":")[1]
+                  if not address_invited in self.addresses:
+                     self.wfile.write("SIP/2.0 404 User Not Found\r\n\r\n")
+                     print "Usuario no registrado"
+                  elif address_invited in self.addresses:
+                     UAServerIP = self.addresses[address_invited][0]
+                     UAServerPort = self.addresses[address_invited][1]
+                     print 'lo mandamos a ', UAServerIP, '-', UAServerPort
+                     my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                     my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                     my_socket.connect((UAServerIP, int(UAServerPort)))
+                     print 'Vamos a mandar: ', line
+                     try:
+                        # Reenviamos al UAServer el invite
+                        my_socket.send(line) 
+                        # Reenviamos al UAClient que realiza el invite
+                        data = my_socket.recv(1024)
+                        self.wfile.write(data)
+                     except socket.error:
+                        Error = 'Error: no user agent server listening'
+                        print Error
+                        self.wfile.write(Error)
+                     my_socket.close()
+               if method == 'Ack':
+                  address_invited = line.split()[1].split(":")[1]
+                  UAServerIP = self.addresses[address_invited][0]
+                  UAServerPort = self.addresses[address_invited][1]
+                  my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                  my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                  my_socket.connect((UAServerIP, int(UAServerPort)))
+                  try:
+                     my_socket.send(line)
+                  except socket.error:
+                     Error = 'Error: no user agent server listening'
+                     print Error
+                  my_socket.close()
+
+               if method == 'Bye':
+                  address_invited = line.split()[1].split(":")[1]
+                  if not address_invited in self.addresses:
+                     self.wfile.write("SIP/2.0 404 User Not Found\r\n\r\n")
+                  elif address_invited in self.addresses:
+                     UAServerIP = self.addresses[address_invited][0]
+                     UAServerPort = self.addresses[address_invited][1]
+                     my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                     my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                     my_socket.connect((UAServerIP, int(UAServerPort)))
+                     try:
+                        my_socket.send(line)
+                        data = my_socket.recv(1024)
+                        self.wfile.write(data)
+                     except socket.error:
+                        Error = 'Error: no user agent server listening'
+                        print Error
+                     my_socket.close()
+                  
+            elif not method in method_list:
+               self.wfile.write('SIP/2.0 405 Method Not Allowed\r\n\r\n')
+         else:
+            self.wfile.write('SIP/2.0 400 Bad Request\r\n\r\n')
 
 if __name__ == "__main__":
    # Comprobación de la linea de argumentos
