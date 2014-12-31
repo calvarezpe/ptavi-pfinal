@@ -100,6 +100,8 @@ if __name__ == "__main__":
       LINE += 'v=0\r\no=' + list_tags[0]['username'] + ' ' + list_tags[1]['ip']
       LINE += '\r\ns=misesion\r\nt=0\r\nm=audio ' + list_tags[2]['puerto']
       LINE += ' RTP\r\n\r\n'
+   elif method == 'Bye':
+      LINE = method + ' sip:' + sys.argv[3] + ' SIP/2.0\r\n\r\n'
       
    try:
       print "Enviando: " + LINE
@@ -110,6 +112,20 @@ if __name__ == "__main__":
    except socket.error:
       print "Error: No server listening at ", SERVER_IP, " port ",
       print str(SERVER_PORT)
+
+   if len(data_list) == 11:
+      if data_list[1] == '100' and data_list[3] == '180':
+         if data_list[5] == '200':
+            LINE = 'Ack sip:' + sys.argv[3] + ' SIP/2.0\r\n\r\n'
+            my_socket.send(LINE)
+            audio_port = int(data_list[-2])
+            audio_ip = data_list[-3].split("\r\n")[0]
+            # Comienza el envio de audio
+            aEjecutar = "./mp32rtp -i " + audio_ip + " -p "
+            aEjecutar += str(audio_port) + " < " + list_tags[5]['path']
+            print "Vamos a ejecutar ", aEjecutar
+            os.system(aEjecutar)
+            print "Envio de RTP terminado"
 
    # Cerramos todo
    my_socket.close()
