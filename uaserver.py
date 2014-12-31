@@ -5,6 +5,7 @@ import socket
 import sys
 import os.path
 import SocketServer
+import os
 
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
@@ -57,31 +58,54 @@ class SmallSMILHandler(ContentHandler):
         return self.tags
 
 class EchoHandler(SocketServer.DatagramRequestHandler):
-    """
-    Echo server class
-    """
+   """
+   Echo server class
+   """
+   RTP = {'port' : 0, 'ip' : '0'}
 
-    def handle(self):
-        while 1:
-            # Leyendo línea a línea lo que nos envía el cliente
-            line = self.rfile.read()
-            # Si no hay más líneas salimos del bucle infinito
-            if not line:
-                break
-            print "El cliente nos manda " + line
-            method = line.split(" ")[0]
-            if method == 'Invite':
-               audio_port = line.split(" ")[-2]
-               audio_ip = line.split(" ")[-3].split("\r\n")[0]
-               if not list_tags[1]['ip']:
-                  list_tags[1]['ip'] = '127.0.0.1'
-               SDP = 'v=0\r\no=' + list_tags[0]['username'] + ' '
-               SDP += list_tags[1]['ip'] + '\r\ns=misesion\r\nt=0\r\n'
-               SDP += 'm=audio ' + list_tags[2]['puerto'] + ' RTP\r\n\r\n' 
-               new_line = 'SIP/2.0 100 Trying\r\n\r\nSIP/2.0 180 Ringing'
-               new_line += '\r\n\r\nSIP/2.0 200 OK\r\n'
-               new_line += 'Content-Type: aplication/sdp\r\n\r\n' + SDP
-               self.wfile.write(new_line)
+   def handle(self):
+      
+      
+      while 1:
+         # Leyendo línea a línea lo que nos envía el cliente
+         line = self.rfile.read()
+         # Si no hay más líneas salimos del bucle infinito
+         if not line:
+             break
+         print "El proxy nos manda " + line
+         method = line.split(" ")[0]
+         method_list = ['Invite', 'Ack', 'Bye']
+         head = line.split("\r\n")[0]
+         head_list = head.split(" ")
+         sip = head_list[1].split(":")[0]
+         if len(head_list) == 3 and head_list[2] == "SIP/2.0" and sip == "sip":
+            if method in method_list:
+               if method == 'Invite':
+                  self.RTP['port'] = line.split(" ")[-2]
+                  self.RTP['ip'] = line.split(" ")[-3].split("\r\n")[0]
+                  if not list_tags[1]['ip']:
+                     list_tags[1]['ip'] = '127.0.0.1'
+                  SDP = 'v=0\r\no=' + list_tags[0]['username'] + ' '
+                  SDP += list_tags[1]['ip'] + '\r\ns=misesion\r\nt=0\r\n'
+                  SDP += 'm=audio ' + list_tags[2]['puerto'] + ' RTP\r\n\r\n' 
+                  new_line = 'SIP/2.0 100 Trying\r\n\r\nSIP/2.0 180 Ringing'
+                  new_line += '\r\n\r\nSIP/2.0 200 OK\r\n'
+                  new_line += 'Content-Type: aplication/sdp\r\n\r\n' + SDP
+                  self.wfile.write(new_line)
+               if method == 'Ack':
+                  print 'Audio RTP a ', self.RTP['port'], '-', self.RTP['ip']
+                  aEjecutar = "./mp32rtp -i " + self.RTP['ip'] + " -p "
+                  aEjecutar += self.RTP['port'] + " < " + list_tags[5]['path']
+                  print "Vamos a ejecutar ", aEjecutar
+                  os.system(aEjecutar)
+                  print "Envio de RTP terminado"
+               if method == 'Bye':
+                  self.wfile.write('SIP/2.0 200 OK\r\n\r\n')
+            elif not method in method_list:
+               self.wfile.write('SIP/2.0 405 Method Not Allowed\r\n\r\n')
+         else:
+            self.wfile.write('SIP/2.0 400 Bad Request\r\n\r\n')
+
 
 if __name__ == "__main__":
 	# Comprobación de la linea de argumentos
