@@ -1,0 +1,5 @@
+<config>
+    <server name="ServidorGuay" ip="" puerto="6542" />
+    <database path="register.txt" paswdpath="" />
+    <log path="logproxy.txt" />
+</config>
