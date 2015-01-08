@@ -1,0 +1,8 @@
+<config>
+    <account username="penny@girlnextdoor.com" passwd=""/>
+    <uaserver ip="" puerto="9999"/>
+    <rtpaudio puerto="7777"/>
+    <regproxy ip="" puerto="6542"/>
+    <log path="logagent.txt"/>
+    <audio path="cancion.mp3"/>
+</config>
