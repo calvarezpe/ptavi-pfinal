@@ -53,6 +53,9 @@ class XMLHandler(ContentHandler):  # Importado al Client
 
 
 class VLCThread(threading.Thread):
+    """
+    Hilo para escuchar el mp3 que recibimos
+    """
 
     def __init__(self, IpClient, mp3port):
         threading.Thread.__init__(self)
